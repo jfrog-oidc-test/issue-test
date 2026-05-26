@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Repository Request</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f6f8fa;
+      color: #1f2328;
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+      padding: 2rem 2.25rem;
+    }
+    header { margin-bottom: 1.5rem; }
+    header h1 { margin: 0 0 0.4rem; font-size: 24px; font-weight: 600; }
+    .subtitle { margin: 0; color: #57606a; font-size: 14px; }
+
+    /* Preview card */
+    .preview-card {
+      background: linear-gradient(135deg, #f0f6ff 0%, #f0fbf7 100%);
+      border: 1px solid #d0d7de;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 1.5rem;
+    }
+    .preview-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: #57606a; margin-bottom: 8px;
+    }
+    .preview-name {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 20px; font-weight: 500;
+      word-break: break-all; min-height: 24px;
+    }
+    .preview-name .prefix { color: #0969da; }
+    .preview-name .sep { color: #6e7781; }
+    .preview-name .name { color: #1a7f37; }
+    .preview-name .empty { color: #8c959f; font-style: italic; font-size: 15px; font-family: inherit; }
+
+    .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .chip {
+      font-size: 11px; padding: 3px 9px; border-radius: 12px;
+      background: rgba(255,255,255,0.7); border: 1px solid #d0d7de;
+    }
+    .chip strong { font-weight: 600; }
+
+    /* Form */
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 540px) { .row { grid-template-columns: 1fr; } }
+
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .field .hint { font-size: 12px; color: #6e7781; margin-bottom: 6px; }
+    .field .required { color: #cf222e; }
+
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 8px 11px; font-size: 14px; font-family: inherit;
+      background: #fff; border: 1px solid #d0d7de; border-radius: 6px;
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: #0969da;
+      box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+    }
+    .field textarea { resize: vertical; min-height: 70px; }
+    .warn { font-size: 12px; color: #9a6700; margin-top: 4px; min-height: 14px; }
+
+    /* Submit */
+    .submit {
+      width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
+      background: #1f883d; color: #fff; border: none; border-radius: 6px;
+      cursor: pointer; transition: background 0.15s, opacity 0.15s; margin-top: 8px;
+    }
+    .submit:hover:not(:disabled) { background: #1a7f37; }
+    .submit:disabled { background: #94d3a2; cursor: not-allowed; }
+
+    /* Result section */
+    .result {
+      display: none;
+      margin-top: 1.5rem;
+      padding: 16px;
+      background: #dafbe1;
+      border: 1px solid #1a7f37;
+      border-radius: 8px;
+    }
+    .result.show { display: block; }
+    .result h3 { margin: 0 0 10px; font-size: 14px; color: #116329; }
+    .result pre {
+      background: #fff;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 0;
+      font-size: 13px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .result-actions {
+      display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+    }
+    .btn {
+      background: #fff; color: #1f2328; border: 1px solid #d0d7de;
+      padding: 6px 12px; font-size: 13px; font-weight: 500;
+      border-radius: 6px; cursor: pointer; transition: background 0.15s;
+    }
+    .btn:hover { background: #f6f8fa; }
+    .btn.primary { background: #0969da; color: #fff; border-color: #0969da; }
+    .btn.primary:hover { background: #0860c4; }
+    .btn-row { display: flex; gap: 8px; margin-top: 0.5rem; flex-wrap: wrap; }
+
+    footer {
+      margin-top: 1.5rem; padding-top: 1.25rem;
+      border-top: 1px solid #d0d7de; text-align: center;
+    }
+    footer p { margin: 0; font-size: 12px; color: #6e7781; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 New Repository Request</h1>
+      <p class="subtitle">Fill out the form below. The repository name updates live as you type.</p>
+    </header>
+
+    <!-- Live preview -->
+    <section class="preview-card">
+      <div class="preview-label">Your repository will be created as</div>
+      <div class="preview-name" id="preview">
+        <span class="empty">Select a prefix and enter a name...</span>
+      </div>
+      <div class="meta" id="meta"></div>
+    </section>
+
+    <!-- Form -->
+    <form id="repoForm" autocomplete="off">
+      <div class="row">
+        <div class="field">
+          <label for="prefix">Repository prefix <span class="required">*</span></label>
+          <div class="hint">First part of the name</div>
+          <select id="prefix" required>
+            <option value="">— select prefix —</option>
+            <option value="svc">svc · microservice</option>
+            <option value="lib">lib · shared library</option>
+            <option value="app">app · application</option>
+            <option value="api">api · API project</option>
+            <option value="infra">infra · infrastructure</option>
+            <option value="data">data · data pipeline</option>
+            <option value="docs">docs · documentation</option>
+            <option value="tool">tool · internal tooling</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="repoName">Repository name <span class="required">*</span></label>
+          <div class="hint">Lowercase, hyphens only</div>
+          <input id="repoName" type="text" placeholder="customer-portal" required />
+          <div class="warn" id="nameWarn"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="product">Product name <span class="required">*</span></label>
+          <select id="product" required>
+            <option value="">— select product —</option>
+            <option>Payments</option>
+            <option>Lending</option>
+            <option>Wealth Management</option>
+            <option>Insurance</option>
+            <option>Retail Banking</option>
+            <option>Corporate Banking</option>
+            <option>Risk &amp; Compliance</option>
+            <option>Data Platform</option>
+            <option>Customer Experience</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="tribe">Tribe name <span class="required">*</span></label>
+          <select id="tribe" required>
+            <option value="">— select tribe —</option>
+            <option>Core Banking Tribe</option>
+            <option>Digital Channels Tribe</option>
+            <option>Payments Tribe</option>
+            <option>Data &amp; Analytics Tribe</option>
+            <option>Infrastructure Tribe</option>
+            <option>Security Tribe</option>
+            <option>Platform Engineering Tribe</option>
+            <option>Customer Onboarding Tribe</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="ban">BAN ID <span class="required">*</span></label>
+          <div class="hint">Business Application Number</div>
+          <input id="ban" type="text" placeholder="BAN-12345" required />
+        </div>
+
+        <div class="field">
+          <label for="visibility">Repository visibility <span class="required">*</span></label>
+          <select id="visibility" required>
+            <option value="">— select visibility —</option>
+            <option value="private">Private</option>
+            <option value="internal">Internal</option>
+            <option value="public">Public</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="description">Repository description <span class="required">*</span></label>
+        <textarea id="description" rows="3" placeholder="Describe the purpose and scope of this repository..." required></textarea>
+      </div>
+
+      <button type="submit" class="submit" id="submit" disabled>
+        Submit & create issue on GitHub
+      </button>
+    </form>
+
+    <!-- Result -->
+    <section class="result" id="result">
+      <h3>✅ Issue creation page opened in a new tab</h3>
+      <p style="margin:0 0 10px; font-size:13px; color:#116329;">
+        We've opened GitHub's "New Issue" page with your request pre-filled.
+        Just click <strong>Submit new issue</strong> on GitHub to finalize it.
+      </p>
+      <p style="margin:0 0 10px; font-size:13px; color:#116329;">
+        Tab didn't open? <a id="issueLink" href="#" target="_blank" rel="noopener" style="color:#0969da; font-weight:600;">Click here to open it manually →</a>
+      </p>
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer; font-size:13px; font-weight:500; color:#116329;">
+          View / copy the request content
+        </summary>
+        <pre id="resultText" style="margin-top:8px;"></pre>
+        <div class="result-actions">
+          <button type="button" class="btn primary" id="copyBtn">📋 Copy to clipboard</button>
+          <button type="button" class="btn" id="downloadBtn">⬇️ Download as .md</button>
+          <button type="button" class="btn" id="resetBtn">↺ Start over</button>
+        </div>
+      </details>
+      <div class="result-actions" style="margin-top:12px;">
+        <button type="button" class="btn" id="resetBtnTop">↺ Submit another request</button>
+      </div>
+    </section>
+
+    <footer>
+      <p>Submitting opens a pre-filled GitHub issue page in a new tab. You'll review and confirm the issue on GitHub.</p>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ============================================================
+      // ✏️ CONFIG — edit this to point at your target repo
+      // ============================================================
+      const ISSUE_REPO = 'your-org/repo-requests';   // owner/repo where the issue will be created
+      const ISSUE_LABELS = ['repo-creation'];        // labels to apply (must exist in the repo)
+      // ============================================================
+
+      const $ = (id) => document.getElementById(id);
+      const REQUIRED = ['prefix','repoName','product','tribe','ban','visibility','description'];
+
+      function sanitize(s) {
+        return (s || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9-]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({
+          '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+        }[c]));
+      }
+
+      function renderPreview() {
+        const prefix = $('prefix').value;
+        const rawName = $('repoName').value;
+        const cleanName = sanitize(rawName);
+        const nameWarn = $('nameWarn');
+
+        nameWarn.textContent = (rawName && rawName !== cleanName)
+          ? `Will be sanitized to: ${cleanName}` : '';
+
+        const preview = $('preview');
+        if (prefix && cleanName) {
+          preview.innerHTML = `<span class="prefix">${prefix}</span><span class="sep">-</span><span class="name">${cleanName}</span>`;
+        } else if (prefix) {
+          preview.innerHTML = `<span class="prefix">${prefix}</span><span class="sep">-</span><span class="empty">enter name</span>`;
+        } else if (cleanName) {
+          preview.innerHTML = `<span class="empty">select prefix</span><span class="sep">-</span><span class="name">${cleanName}</span>`;
+        } else {
+          preview.innerHTML = `<span class="empty">Select a prefix and enter a name...</span>`;
+        }
+
+        // Chips
+        const chips = [];
+        const fields = [['product','Product'],['tribe','Tribe'],['ban','BAN'],['visibility','Visibility']];
+        for (const [id, label] of fields) {
+          const v = $(id).value;
+          if (v) chips.push(`<span class="chip">${label}: <strong>${escapeHtml(v)}</strong></span>`);
+        }
+        $('meta').innerHTML = chips.join('');
+
+        $('submit').disabled = !REQUIRED.every((f) => $(f).value.trim() !== '');
+      }
+
+      function buildRequestText(data) {
+        return `### Repository Request
+
+**Full repo name:** \`${data.fullName}\`
+
+| Field | Value |
+|---|---|
+| Repository prefix | \`${data.prefix}\` |
+| Repository name | \`${data.repoName}\` |
+| Product | ${data.product} |
+| Tribe | ${data.tribe} |
+| BAN ID | ${data.ban} |
+| Visibility | ${data.visibility} |
+
+### Description
+${data.description}`;
+      }
+
+      function collectData() {
+        const data = {
+          prefix: $('prefix').value,
+          repoName: sanitize($('repoName').value),
+          product: $('product').value,
+          tribe: $('tribe').value,
+          ban: $('ban').value,
+          visibility: $('visibility').value,
+          description: $('description').value
+        };
+        data.fullName = `${data.prefix}-${data.repoName}`;
+        return data;
+      }
+
+      function handleSubmit(e) {
+        e.preventDefault();
+        const data = collectData();
+        const text = buildRequestText(data);
+
+        // Build GitHub's "new issue" URL with everything pre-filled
+        const params = new URLSearchParams({
+          title: `[Repo Request]: ${data.fullName}`,
+          body: text,
+          labels: ISSUE_LABELS.join(',')
+        });
+        const issueUrl = `https://github.com/${ISSUE_REPO}/issues/new?${params.toString()}`;
+
+        // Show the success card with the generated content + link
+        $('resultText').textContent = text;
+        $('issueLink').href = issueUrl;
+        $('result').classList.add('show');
+        $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Store for copy/download actions
+        window._requestData = data;
+        window._requestText = text;
+        window._issueUrl = issueUrl;
+
+        // Auto-open GitHub in a new tab
+        window.open(issueUrl, '_blank');
+      }
+
+      function copyToClipboard() {
+        navigator.clipboard.writeText(window._requestText).then(() => {
+          const btn = $('copyBtn');
+          const original = btn.textContent;
+          btn.textContent = '✓ Copied!';
+          setTimeout(() => { btn.textContent = original; }, 1500);
+        });
+      }
+
+      function downloadMarkdown() {
+        const blob = new Blob([window._requestText], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `repo-request-${window._requestData.fullName}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function resetForm() {
+        $('repoForm').reset();
+        $('result').classList.remove('show');
+        renderPreview();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function init() {
+        REQUIRED.forEach((f) => {
+          $(f).addEventListener('input', renderPreview);
+          $(f).addEventListener('change', renderPreview);
+        });
+        $('repoForm').addEventListener('submit', handleSubmit);
+        $('copyBtn').addEventListener('click', copyToClipboard);
+        $('downloadBtn').addEventListener('click', downloadMarkdown);
+        $('resetBtn').addEventListener('click', resetForm);
+        $('resetBtnTop').addEventListener('click', resetForm);
+        renderPreview();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>

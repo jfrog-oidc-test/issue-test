@@ -82,6 +82,16 @@
     .field textarea { resize: vertical; min-height: 70px; }
     .warn { font-size: 12px; color: #9a6700; margin-top: 4px; min-height: 14px; }
 
+    .char-counter {
+      font-size: 12px;
+      color: #6e7781;
+      text-align: right;
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .char-counter.warning { color: #9a6700; }
+    .char-counter.danger { color: #cf222e; font-weight: 600; }
+
     /* Submit */
     .submit {
       width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
@@ -231,7 +241,9 @@
 
       <div class="field">
         <label for="description">Repository description <span class="required">*</span></label>
-        <textarea id="description" rows="3" placeholder="Describe the purpose and scope of this repository..." required></textarea>
+        <div class="hint">Maximum 800 characters</div>
+        <textarea id="description" rows="3" maxlength="800" placeholder="Describe the purpose and scope of this repository..." required></textarea>
+        <div class="char-counter" id="descCounter">0 / 800</div>
       </div>
 
       <button type="submit" class="submit" id="submit" disabled>
@@ -277,7 +289,7 @@
       // ============================================================
       // ✏️ CONFIG — edit this to point at your target repo
       // ============================================================
-      const ISSUE_REPO = 'jfrog-oidc-test/issue-test';   // owner/repo where the issue will be created
+      const ISSUE_REPO = 'your-org/repo-requests';   // owner/repo where the issue will be created
       const ISSUE_LABELS = ['repo-creation'];        // labels to apply (must exist in the repo)
       // ============================================================
 
@@ -326,6 +338,14 @@
           if (v) chips.push(`<span class="chip">${label}: <strong>${escapeHtml(v)}</strong></span>`);
         }
         $('meta').innerHTML = chips.join('');
+
+        // Description character counter
+        const descLen = $('description').value.length;
+        const counter = $('descCounter');
+        counter.textContent = `${descLen} / 800`;
+        counter.className = 'char-counter';
+        if (descLen >= 800) counter.classList.add('danger');
+        else if (descLen >= 700) counter.classList.add('warning');
 
         $('submit').disabled = !REQUIRED.every((f) => $(f).value.trim() !== '');
       }

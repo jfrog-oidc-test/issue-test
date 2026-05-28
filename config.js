@@ -20,47 +20,39 @@ window.APP_CONFIG = {
   // --- Repository prefixes ---
   // `value` becomes the repo prefix (svc-myapp). `label` is what users see.
   PREFIXES: [
-    { value: 'svc',   label: 'svc · microservice' },
-    { value: 'lib',   label: 'lib · shared library' },
-    { value: 'app',   label: 'app · application' },
-    { value: 'api',   label: 'api · API project' },
-    { value: 'infra', label: 'infra · infrastructure' },
-    { value: 'data',  label: 'data · data pipeline' },
-    { value: 'docs',  label: 'docs · documentation' },
-    { value: 'tool',  label: 'tool · internal tooling' }
+    { value: 'gg',   label: 'gg · Descreat Projects' },
+    { value: 'erd',   label: 'erd · Descreat Projects' },
+    { value: 'lmdx',   label: 'lmdx · Descreat Projects' },
+    { value: 'swcd',   label: 'swcd · SW Digital Platform' },
+    { value: 'api', label: 'api · API Ecosystem' },
+    { value: 'esd',  label: 'esd · Embeded pipeline' },
+    { value: 'planner',  label: 'planner · 247-planner' },
+    { value: 'clinica',  label: 'clinica · 247-clinica-survey' }
   ],
 
   // --- Products ---
   PRODUCTS: [
-    'Payments',
-    'Lending',
-    'Wealth Management',
-    'Insurance',
-    'Retail Banking',
-    'Corporate Banking',
-    'Risk & Compliance',
-    'Data Platform',
-    'Customer Experience'
+    'Descreat-Projects',
+    'SW-Digital-Platform',
+    'API-Ecosystem',
+    'Embeded-pipeline',
+    '247-planner',
+    '247-clinica-survey'
   ],
 
   // --- Tribes ---
   TRIBES: [
-    'Core Banking Tribe',
-    'Digital Channels Tribe',
-    'Payments Tribe',
-    'Data & Analytics Tribe',
-    'Infrastructure Tribe',
-    'Security Tribe',
-    'Platform Engineering Tribe',
-    'Customer Onboarding Tribe'
+    'CEP',
+    'DevOps',
+    'BOI',
+    'CCKCE',
+    'PRM'
   ],
 
   // --- Repository visibility ---
   VISIBILITY: [
     { value: 'private',  label: 'Private' },
-    { value: 'internal', label: 'Internal' },
-    { value: 'public',   label: 'Public' }
-  ],
+    { value: 'internal', label: 'Internal' }  ],
 
   // --- Description max length ---
   DESCRIPTION_MAX: 800,
@@ -74,50 +66,35 @@ window.APP_CONFIG = {
   // "Other (enter manually)" to type a BAN ID not in the list.
   // Set tribes or prefixes to 'all' to allow everything for that product.
   PRODUCT_MAP: {
-    'Payments': {
-      tribes: ['Payments Tribe', 'Core Banking Tribe'],
-      prefixes: ['svc', 'api', 'lib'],
+    'Descreat-Projects': {
+      tribes: ['CEP', 'CCKCE'],
+      prefixes: ['gg', 'erd', 'lmdx'],
       bans: ['BAN-1001', 'BAN-1002', 'BAN-1003']
     },
-    'Lending': {
-      tribes: ['Core Banking Tribe', 'Customer Onboarding Tribe'],
-      prefixes: ['svc', 'app', 'api'],
-      bans: ['BAN-2001', 'BAN-2002']
+    'SW-Digital-Platform': {
+      tribes: ['DevOps'],
+      prefixes: ['swcd'],
+      bans: ['BAN-2002']
     },
-    'Wealth Management': {
-      tribes: ['Core Banking Tribe', 'Digital Channels Tribe'],
-      prefixes: ['svc', 'app'],
-      bans: ['BAN-3001', 'BAN-3002', 'BAN-3003']
+    'API-Ecosystem': {
+      tribes: ['BOI'],
+      prefixes: ['api'],
+      bans: ['BAN-3001']
     },
-    'Insurance': {
-      tribes: ['Customer Onboarding Tribe', 'Digital Channels Tribe'],
-      prefixes: ['svc', 'app', 'docs'],
-      bans: ['BAN-4001', 'BAN-4002']
+    'Embeded-pipeline': {
+      tribes: ['DevOps'],
+      prefixes: ['ESD'],
+      bans: ['BAN-4001']
     },
-    'Retail Banking': {
-      tribes: ['Digital Channels Tribe', 'Core Banking Tribe'],
-      prefixes: ['app', 'svc', 'api'],
-      bans: ['BAN-5001', 'BAN-5002', 'BAN-5003']
+    '247-planner': {
+      tribes: ['PRM'],
+      prefixes: ['planner'],
+      bans: ['BAN-5001']
     },
-    'Corporate Banking': {
-      tribes: ['Core Banking Tribe', 'Security Tribe'],
-      prefixes: ['svc', 'api', 'infra'],
-      bans: ['BAN-6001', 'BAN-6002']
-    },
-    'Risk & Compliance': {
-      tribes: ['Security Tribe', 'Data & Analytics Tribe'],
-      prefixes: ['svc', 'data', 'tool'],
-      bans: ['BAN-7001', 'BAN-7002']
-    },
-    'Data Platform': {
-      tribes: ['Data & Analytics Tribe', 'Infrastructure Tribe'],
-      prefixes: ['data', 'infra', 'svc', 'tool'],
-      bans: ['BAN-8001', 'BAN-8002', 'BAN-8003']
-    },
-    'Customer Experience': {
-      tribes: ['Digital Channels Tribe', 'Customer Onboarding Tribe'],
-      prefixes: ['app', 'svc', 'docs'],
-      bans: ['BAN-9001', 'BAN-9002']
+    '247-clinica-survey': {
+      tribes: ['PRM'],
+      prefixes: ['clinica'],
+      bans: ['BAN-6001']
     }
   }
 };

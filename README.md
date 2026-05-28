@@ -1,76 +1,79 @@
 # Repo Request Form
 
-A single-file, dynamic form for creating repository request issues on GitHub. No backend, no API tokens, no authentication — just a clean form that opens a pre-filled GitHub issue page when submitted.
+A dynamic form for creating repository request issues on GitHub. Searchable, cascading dropdowns; live repo-name preview; no backend, no tokens, no authentication.
+
+## Files
+
+```
+repo-request-form-only/
+├── index.html    # The form (UI + logic) — you rarely touch this
+└── config.js     # ✏️ ALL editable settings live here
+```
+
+**To change anything — repo target, dropdown options, product mappings — edit `config.js` only.** The form reads everything from it at load time.
 
 ## How it works
 
 ```
-User fills form  →  Clicks Submit  →  New tab opens with pre-filled GitHub issue
-                                       ↓
-                                 User clicks "Submit new issue" on GitHub
-                                       ↓
-                                  Issue is created in your repo
+User fills form → Clicks Submit → New tab opens a pre-filled GitHub issue
+                                   → User clicks "Submit new issue" to confirm
 ```
 
-This uses GitHub's native URL-prefilled issues feature. The form builds a URL with title, body, and labels, then opens it.
+## What you can edit in config.js
 
-**Why this approach is great:**
-- ✅ Zero authentication — uses the user's existing GitHub session
-- ✅ No tokens, no API calls, no backend
-- ✅ Audit trail per user (GitHub shows the actual requester)
-- ✅ User reviews the issue before submitting it (one extra click = safety)
+| Setting | What it controls |
+|---|---|
+| `ISSUE_REPO` | The `owner/repo` where issues are created |
+| `ISSUE_LABELS` | Labels applied to each issue |
+| `PREFIXES` | Repository prefix options (svc, api, ...) |
+| `PRODUCTS` | Product dropdown options |
+| `TRIBES` | Tribe dropdown options |
+| `VISIBILITY` | Visibility options |
+| `DESCRIPTION_MAX` | Max characters for the description |
+| `PRODUCT_MAP` | Which tribes & prefixes each product allows (cascading) |
 
-## Setup (5 minutes)
+### Example: adding a new product
 
-### Step 1 — Create the issue-tracker repo
-
-```bash
-gh repo create your-org/repo-requests --private
-gh label create repo-creation --color 0E8A16 --repo your-org/repo-requests
-```
-
-### Step 2 — Configure the form
-
-Open `index.html`, find the CONFIG block near the top of the `<script>`:
+In `config.js`:
 
 ```js
-const ISSUE_REPO = 'your-org/repo-requests';   // ← change this
-const ISSUE_LABELS = ['repo-creation'];
+PRODUCTS: [
+  'Payments',
+  'My New Product',   // ← add here
+  ...
+],
+
+PRODUCT_MAP: {
+  'My New Product': {                       // ← and map it here
+    tribes: ['Core Banking Tribe'],
+    prefixes: ['svc', 'api']
+  },
+  ...
+}
 ```
 
-### Step 3 — Host it
+Use `'all'` to allow everything: `tribes: 'all'` or `prefixes: 'all'`.
 
-**Option A: GitHub Pages**
-```bash
-gh repo create your-org/repo-portal --public
-cd repo-portal
-# copy index.html here
-git init && git add . && git commit -m "form"
-git push -u origin main
-```
-Then **Settings → Pages → Source = main / (root)**.
+## Deployment (GitHub Pages)
 
-**Option B: Open the file locally** — works fully offline. Share via email/Slack.
+1. Create a repo (e.g. `your-org/repo-portal`), make it **public**.
+2. Upload **both** `index.html` and `config.js` to the repo root.
+3. Settings → Pages → Source = `main` branch, `/ (root)` → Save.
+4. Edit `config.js` → set `ISSUE_REPO` to your real `owner/repo`.
+5. Create the `repo-creation` label in that repo (Issues → Labels → New label).
+6. Visit `https://your-org.github.io/repo-portal/`.
 
-## User flow
+⚠️ **Both files must be in the same folder.** If `config.js` is missing, the form shows a clear error message.
 
-1. Open the portal
-2. Fill the form (live preview shows `prefix-name` as they type)
-3. Click **Submit & create issue on GitHub**
-4. A new tab opens on GitHub with the issue pre-filled
-5. User clicks **Submit new issue** on GitHub to confirm
-6. Issue appears in `your-org/repo-requests` with the `repo-creation` label
+## Features
 
-## Customizing dropdowns
-
-All the dropdown options are in `index.html`:
-- Repository prefix → `<select id="prefix">`
-- Product name → `<select id="product">`
-- Tribe name → `<select id="tribe">`
-- Visibility → `<select id="visibility">`
-
-Edit the `<option>` lists and you're done.
+- 🔍 Searchable dropdowns (type to filter)
+- 🔗 Cascading: product filters tribe + prefix
+- 👀 Live `prefix-name` preview as you type
+- 🔢 Description character counter
+- ✅ Submit disabled until all fields valid
+- 📋 Copy / download / open-as-issue actions
 
 ## Future upgrade path
 
-Once you're ready for automation, just add a GitHub Actions workflow that fires on `issues: opened` with the `repo-creation` label and calls the GitHub API to create the actual repo. The form doesn't need to change — the issue body is already in a structured format.
+When ready for automation, add a GitHub Actions workflow that fires on issues labeled `repo-creation` and creates the repo via API. The issue body is already structured for parsing. The form itself won't need changes.

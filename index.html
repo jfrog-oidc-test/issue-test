@@ -92,6 +92,46 @@
     .char-counter.warning { color: #9a6700; }
     .char-counter.danger { color: #cf222e; font-weight: 600; }
 
+    /* Searchable dropdown */
+    .ss-wrap { position: relative; }
+    .ss-native { position: absolute; opacity: 0; pointer-events: none; height: 0; width: 0; }
+    .ss-control {
+      width: 100%; padding: 8px 32px 8px 11px; font-size: 14px; font-family: inherit;
+      background: #fff; border: 1px solid #d0d7de; border-radius: 6px;
+      cursor: pointer; min-height: 38px; display: flex; align-items: center;
+      transition: border-color 0.15s, box-shadow 0.15s; position: relative;
+    }
+    .ss-control:after {
+      content: ''; position: absolute; right: 12px; top: 50%;
+      width: 0; height: 0; border-left: 5px solid transparent;
+      border-right: 5px solid transparent; border-top: 5px solid #6e7781;
+      transform: translateY(-50%); transition: transform 0.15s;
+    }
+    .ss-wrap.open .ss-control:after { transform: translateY(-50%) rotate(180deg); }
+    .ss-wrap.open .ss-control {
+      border-color: #0969da; box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+    }
+    .ss-control .ss-value { color: #1f2328; }
+    .ss-control .ss-placeholder { color: #8c959f; }
+
+    .ss-panel {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: #fff; border: 1px solid #d0d7de; border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 50; overflow: hidden;
+    }
+    .ss-wrap.open .ss-panel { display: block; }
+    .ss-search {
+      width: 100%; padding: 8px 11px; font-size: 14px; font-family: inherit;
+      border: none; border-bottom: 1px solid #d0d7de; outline: none; box-sizing: border-box;
+    }
+    .ss-options { max-height: 220px; overflow-y: auto; }
+    .ss-option {
+      padding: 8px 11px; font-size: 14px; cursor: pointer; color: #1f2328;
+    }
+    .ss-option:hover, .ss-option.active { background: #ddf4ff; }
+    .ss-option.selected { font-weight: 600; color: #0969da; }
+    .ss-empty { padding: 10px 11px; font-size: 13px; color: #8c959f; font-style: italic; }
+
     /* Submit */
     .submit {
       width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
@@ -165,18 +205,28 @@
     <form id="repoForm" autocomplete="off">
       <div class="row">
         <div class="field">
+          <label for="product">Product name <span class="required">*</span></label>
+          <div class="hint">Select this first</div>
+          <select id="product" required>
+            <option value="">— select product —</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="tribe">Tribe name <span class="required">*</span></label>
+          <div class="hint">Filtered by selected product</div>
+          <select id="tribe" required>
+            <option value="">— select tribe —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
           <label for="prefix">Repository prefix <span class="required">*</span></label>
-          <div class="hint">First part of the name</div>
+          <div class="hint">First part of the name · filtered by product</div>
           <select id="prefix" required>
             <option value="">— select prefix —</option>
-            <option value="svc">svc · microservice</option>
-            <option value="lib">lib · shared library</option>
-            <option value="app">app · application</option>
-            <option value="api">api · API project</option>
-            <option value="infra">infra · infrastructure</option>
-            <option value="data">data · data pipeline</option>
-            <option value="docs">docs · documentation</option>
-            <option value="tool">tool · internal tooling</option>
           </select>
         </div>
 
@@ -190,51 +240,20 @@
 
       <div class="row">
         <div class="field">
-          <label for="product">Product name <span class="required">*</span></label>
-          <select id="product" required>
-            <option value="">— select product —</option>
-            <option>Payments</option>
-            <option>Lending</option>
-            <option>Wealth Management</option>
-            <option>Insurance</option>
-            <option>Retail Banking</option>
-            <option>Corporate Banking</option>
-            <option>Risk &amp; Compliance</option>
-            <option>Data Platform</option>
-            <option>Customer Experience</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="tribe">Tribe name <span class="required">*</span></label>
-          <select id="tribe" required>
-            <option value="">— select tribe —</option>
-            <option>Core Banking Tribe</option>
-            <option>Digital Channels Tribe</option>
-            <option>Payments Tribe</option>
-            <option>Data &amp; Analytics Tribe</option>
-            <option>Infrastructure Tribe</option>
-            <option>Security Tribe</option>
-            <option>Platform Engineering Tribe</option>
-            <option>Customer Onboarding Tribe</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="field">
           <label for="ban">BAN ID <span class="required">*</span></label>
-          <div class="hint">Business Application Number</div>
-          <input id="ban" type="text" placeholder="BAN-12345" required />
+          <div class="hint">Filtered by selected product</div>
+          <select id="ban" required>
+            <option value="">— select BAN ID —</option>
+          </select>
+          <input id="banOther" type="text" placeholder="Enter BAN ID (e.g. BAN-12345)"
+                 style="display:none; margin-top:8px;" />
+          <div class="warn" id="banWarn"></div>
         </div>
 
         <div class="field">
           <label for="visibility">Repository visibility <span class="required">*</span></label>
           <select id="visibility" required>
             <option value="">— select visibility —</option>
-            <option value="private">Private</option>
-            <option value="internal">Internal</option>
-            <option value="public">Public</option>
           </select>
         </div>
       </div>
@@ -282,16 +301,25 @@
     </footer>
   </div>
 
+  <script src="config.js"></script>
   <script>
     (function () {
       'use strict';
 
-      // ============================================================
-      // ✏️ CONFIG — edit this to point at your target repo
-      // ============================================================
-      const ISSUE_REPO = 'jfrog-oidc-test/issue-test';   // owner/repo where the issue will be created
-      const ISSUE_LABELS = ['repo-creation'];        // labels to apply (must exist in the repo)
-      // ============================================================
+      // --- Pull everything from the external config file ---
+      const CFG = window.APP_CONFIG;
+      if (!CFG) {
+        document.body.innerHTML =
+          '<div style="max-width:600px;margin:3rem auto;font-family:sans-serif;padding:1.5rem;border:1px solid #cf222e;border-radius:8px;background:#ffebe9;color:#82071e">' +
+          '<strong>Configuration not loaded.</strong><br>Make sure <code>config.js</code> is in the same folder as <code>index.html</code> and was uploaded to the repo.</div>';
+        return;
+      }
+      const ISSUE_REPO = CFG.ISSUE_REPO;
+      const ISSUE_LABELS = CFG.ISSUE_LABELS || [];
+      const PRODUCT_MAP = CFG.PRODUCT_MAP || {};
+      const DESC_MAX = CFG.DESCRIPTION_MAX || 800;
+      const BAN_OTHER = '__other__';
+      const BAN_OTHER_LABEL = CFG.BAN_OTHER_LABEL || 'Other (enter manually)';
 
       const $ = (id) => document.getElementById(id);
       const REQUIRED = ['prefix','repoName','product','tribe','ban','visibility','description'];
@@ -332,22 +360,39 @@
 
         // Chips
         const chips = [];
-        const fields = [['product','Product'],['tribe','Tribe'],['ban','BAN'],['visibility','Visibility']];
-        for (const [id, label] of fields) {
-          const v = $(id).value;
+        const banVal = getBanValue();
+        const chipFields = [
+          ['product', $('product').value, 'Product'],
+          ['tribe', $('tribe').value, 'Tribe'],
+          ['ban', banVal, 'BAN'],
+          ['visibility', $('visibility').value, 'Visibility']
+        ];
+        for (const [, v, label] of chipFields) {
           if (v) chips.push(`<span class="chip">${label}: <strong>${escapeHtml(v)}</strong></span>`);
         }
         $('meta').innerHTML = chips.join('');
 
+        // BAN warning when "Other" chosen but empty
+        const banWarn = $('banWarn');
+        if ($('ban').value === BAN_OTHER && !$('banOther').value.trim()) {
+          banWarn.textContent = 'Please enter a BAN ID';
+        } else {
+          banWarn.textContent = '';
+        }
+
         // Description character counter
         const descLen = $('description').value.length;
         const counter = $('descCounter');
-        counter.textContent = `${descLen} / 800`;
+        counter.textContent = `${descLen} / ${DESC_MAX}`;
         counter.className = 'char-counter';
-        if (descLen >= 800) counter.classList.add('danger');
-        else if (descLen >= 700) counter.classList.add('warning');
+        if (descLen >= DESC_MAX) counter.classList.add('danger');
+        else if (descLen >= DESC_MAX * 0.875) counter.classList.add('warning');
 
-        $('submit').disabled = !REQUIRED.every((f) => $(f).value.trim() !== '');
+        // Validation: all required fields filled, and BAN resolved properly
+        const baseValid = REQUIRED.filter(f => f !== 'ban')
+          .every((f) => $(f).value.trim() !== '');
+        const banValid = banVal !== '';
+        $('submit').disabled = !(baseValid && banValid);
       }
 
       function buildRequestText(data) {
@@ -368,13 +413,19 @@
 ${data.description}`;
       }
 
+      function getBanValue() {
+        const sel = $('ban').value;
+        if (sel === BAN_OTHER) return $('banOther').value.trim();
+        return sel;
+      }
+
       function collectData() {
         const data = {
           prefix: $('prefix').value,
           repoName: sanitize($('repoName').value),
           product: $('product').value,
           tribe: $('tribe').value,
-          ban: $('ban').value,
+          ban: getBanValue(),
           visibility: $('visibility').value,
           description: $('description').value
         };
@@ -431,12 +482,251 @@ ${data.description}`;
 
       function resetForm() {
         $('repoForm').reset();
+        // Sync searchable dropdowns back to placeholder
+        ['prefix', 'product', 'tribe', 'visibility', 'ban'].forEach((id) => {
+          $(id).dispatchEvent(new Event('ss:sync'));
+        });
+        $('banOther').value = '';
+        $('banOther').style.display = 'none';
+        applyProductCascade(); // reset tribe/prefix/ban filtering
         $('result').classList.remove('show');
         renderPreview();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
+      // === Enhance native <select> into a searchable dropdown ===
+      function enhanceSelect(select) {
+        const placeholder = select.options[0] ? select.options[0].text : 'Select...';
+        let allOpts = Array.from(select.options)
+          .filter(o => o.value !== '')
+          .map(o => ({ value: o.value, label: o.text }));
+
+        // Which option values are currently selectable (null = all)
+        let allowed = null;
+        const isAllowed = (o) => allowed === null || allowed.includes(o.value);
+        const visibleOpts = () => allOpts.filter(isAllowed);
+
+        // Build DOM
+        const wrap = document.createElement('div');
+        wrap.className = 'ss-wrap';
+
+        const control = document.createElement('div');
+        control.className = 'ss-control';
+        control.tabIndex = 0;
+        control.innerHTML = `<span class="ss-placeholder">${placeholder}</span>`;
+
+        const panel = document.createElement('div');
+        panel.className = 'ss-panel';
+
+        const search = document.createElement('input');
+        search.className = 'ss-search';
+        search.type = 'text';
+        search.placeholder = 'Type to search...';
+
+        const list = document.createElement('div');
+        list.className = 'ss-options';
+
+        panel.appendChild(search);
+        panel.appendChild(list);
+
+        // Insert wrapper, move native select inside (hidden but functional)
+        select.parentNode.insertBefore(wrap, select);
+        select.className = 'ss-native';
+        wrap.appendChild(control);
+        wrap.appendChild(panel);
+        wrap.appendChild(select);
+
+        let activeIndex = -1;
+        let filtered = visibleOpts();
+
+        function renderList() {
+          list.innerHTML = '';
+          if (filtered.length === 0) {
+            list.innerHTML = '<div class="ss-empty">No matches</div>';
+            return;
+          }
+          filtered.forEach((o, i) => {
+            const div = document.createElement('div');
+            div.className = 'ss-option';
+            if (o.value === select.value) div.classList.add('selected');
+            if (i === activeIndex) div.classList.add('active');
+            div.textContent = o.label;
+            div.addEventListener('mousedown', (e) => {
+              e.preventDefault();
+              choose(o);
+            });
+            list.appendChild(div);
+          });
+        }
+
+        function choose(o) {
+          select.value = o.value;
+          control.innerHTML = `<span class="ss-value">${o.label}</span>`;
+          close();
+          // Trigger the existing change/input handlers (preview + validation)
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        function open() {
+          wrap.classList.add('open');
+          search.value = '';
+          filtered = visibleOpts();
+          activeIndex = -1;
+          renderList();
+          setTimeout(() => search.focus(), 0);
+        }
+        function close() { wrap.classList.remove('open'); }
+        function toggle() { wrap.classList.contains('open') ? close() : open(); }
+
+        control.addEventListener('click', toggle);
+        control.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); open(); }
+        });
+
+        search.addEventListener('input', () => {
+          const q = search.value.toLowerCase();
+          filtered = visibleOpts().filter(o => o.label.toLowerCase().includes(q));
+          activeIndex = filtered.length ? 0 : -1;
+          renderList();
+        });
+
+        search.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowDown') { e.preventDefault(); activeIndex = Math.min(activeIndex + 1, filtered.length - 1); renderList(); scrollToActive(); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); renderList(); scrollToActive(); }
+          else if (e.key === 'Enter') { e.preventDefault(); if (filtered[activeIndex]) choose(filtered[activeIndex]); }
+          else if (e.key === 'Escape') { close(); control.focus(); }
+        });
+
+        function scrollToActive() {
+          const el = list.children[activeIndex];
+          if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+        }
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+          if (!wrap.contains(e.target)) close();
+        });
+
+        // Sync display if value is reset externally (e.g. resetForm)
+        select.addEventListener('ss:sync', () => {
+          if (select.value === '') {
+            control.innerHTML = `<span class="ss-placeholder">${placeholder}</span>`;
+          } else {
+            const match = allOpts.find(o => o.value === select.value);
+            if (match) control.innerHTML = `<span class="ss-value">${match.label}</span>`;
+          }
+        });
+
+        // Expose a method to restrict which options are selectable.
+        // Pass an array of allowed values, or null for "all".
+        select.setAllowed = function (allowedValues) {
+          allowed = (allowedValues === null) ? null : allowedValues.slice();
+          // If current selection is no longer allowed, clear it
+          if (select.value !== '' && allowed !== null && !allowed.includes(select.value)) {
+            select.value = '';
+            control.innerHTML = `<span class="ss-placeholder">${placeholder}</span>`;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        };
+
+        // Replace the entire option set (used for product-specific BAN lists).
+        // `items` is an array of {value,label} or strings. Clears current selection.
+        select.setOptions = function (items) {
+          allOpts = (items || []).map(it =>
+            typeof it === 'string' ? { value: it, label: it } : { value: it.value, label: it.label }
+          );
+          allowed = null;
+          select.value = '';
+          control.innerHTML = `<span class="ss-placeholder">${placeholder}</span>`;
+          // Keep the native <select> in sync (for completeness)
+          const ph = select.options[0];
+          select.innerHTML = '';
+          if (ph) select.appendChild(ph);
+          allOpts.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.value; opt.textContent = o.label;
+            select.appendChild(opt);
+          });
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        };
+      }
+
+      function setBanOptions(bans) {
+        // Build BAN option list = product bans + "Other"
+        const items = (bans || []).map(b => ({ value: b, label: b }));
+        items.push({ value: BAN_OTHER, label: BAN_OTHER_LABEL });
+        $('ban').setOptions(items);
+        // Hide manual input until "Other" chosen
+        toggleBanOther();
+      }
+
+      function toggleBanOther() {
+        const isOther = $('ban').value === BAN_OTHER;
+        const other = $('banOther');
+        other.style.display = isOther ? 'block' : 'none';
+        if (!isOther) other.value = '';
+      }
+
+      function applyProductCascade() {
+        const product = $('product').value;
+        const mapping = PRODUCT_MAP[product];
+        if (!product || !mapping) {
+          // No product selected → allow everything; BAN only offers "Other"
+          $('tribe').setAllowed(null);
+          $('prefix').setAllowed(null);
+          setBanOptions([]);
+          return;
+        }
+        $('tribe').setAllowed(mapping.tribes === 'all' ? null : mapping.tribes);
+        $('prefix').setAllowed(mapping.prefixes === 'all' ? null : mapping.prefixes);
+        setBanOptions(mapping.bans || []);
+      }
+
+      function populateDropdowns() {
+        // Helper to append options to a native select
+        const fill = (id, items) => {
+          const sel = $(id);
+          items.forEach((it) => {
+            const opt = document.createElement('option');
+            if (typeof it === 'string') {
+              opt.textContent = it;          // value defaults to text
+            } else {
+              opt.value = it.value;
+              opt.textContent = it.label;
+            }
+            sel.appendChild(opt);
+          });
+        };
+        fill('product', CFG.PRODUCTS || []);
+        fill('tribe', CFG.TRIBES || []);
+        fill('prefix', CFG.PREFIXES || []);
+        fill('visibility', CFG.VISIBILITY || []);
+
+        // Description max length + counter label from config
+        const desc = $('description');
+        desc.setAttribute('maxlength', String(DESC_MAX));
+        const hint = desc.previousElementSibling;
+        if (hint && hint.classList.contains('hint')) hint.textContent = `Maximum ${DESC_MAX} characters`;
+        $('descCounter').textContent = `0 / ${DESC_MAX}`;
+      }
+
       function init() {
+        // Build dropdown options from config FIRST
+        populateDropdowns();
+
+        // Turn every dropdown into a searchable one
+        ['prefix', 'product', 'tribe', 'visibility', 'ban'].forEach((id) => {
+          enhanceSelect($(id));
+        });
+
+        // Cascade: product restricts tribe + prefix + ban
+        $('product').addEventListener('change', applyProductCascade);
+        applyProductCascade(); // set initial state
+
+        // BAN "Other" toggle
+        $('ban').addEventListener('change', () => { toggleBanOther(); renderPreview(); });
+        $('banOther').addEventListener('input', renderPreview);
+
         REQUIRED.forEach((f) => {
           $(f).addEventListener('input', renderPreview);
           $(f).addEventListener('change', renderPreview);

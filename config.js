@@ -14,7 +14,7 @@
 window.APP_CONFIG = {
 
   // --- Where the GitHub issue gets created ---
-  ISSUE_REPO: 'your-org/repo-requests',   // owner/repo
+  ISSUE_REPO: 'jfrog-oidc-test/issue-test',   // owner/repo
   ISSUE_LABELS: ['repo-creation'],         // labels to apply (must exist in that repo)
 
   // --- Repository prefixes ---

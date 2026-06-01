@@ -146,7 +146,28 @@ jobs:
               });
               console.log(`✓ Repository ${org}/${repoName} created successfully`);
 
-              // Add metadata as custom properties
+              // Ensure custom properties exist at org level
+              const propDefs = [
+                { name: 'product', description: 'Product name' },
+                { name: 'tribe', description: 'Tribe name' },
+                { name: 'ban', description: 'BAN ID' }
+              ];
+              for (const prop of propDefs) {
+                try {
+                  await github.request('PUT /orgs/{org}/properties/schema/{custom_property_name}', {
+                    org: org,
+                    custom_property_name: prop.name,
+                    value_type: 'string',
+                    required: false,
+                    description: prop.description
+                  });
+                } catch (e) {
+                  // Property may already exist, continue
+                  console.log(`  Property '${prop.name}': ${e.status === 422 ? 'already exists' : e.message}`);
+                }
+              }
+
+              // Set custom property values on the repo
               const properties = [
                 { property_name: 'product', value: product },
                 { property_name: 'tribe', value: tribe },

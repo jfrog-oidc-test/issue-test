@@ -1,0 +1,75 @@
+# GitHub Teams Configuration
+# Teams are synced with Azure AD groups for member management
+
+org: jfrog-oidc-test
+
+teams:
+  - product: Descreat-Projects
+    teams:
+      - name: Descreat-Projects-Admin
+        description: Admin access for Descreat Projects repositories
+        ad_group_name: GRP-Azure-DescreatProjects-Admin
+        ad_object_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+      - name: Descreat-Projects-Developer
+        description: Developer write access for Descreat Projects repositories
+        ad_group_name: GRP-Azure-DescreatProjects-Dev
+        ad_object_id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+
+      - name: Descreat-Projects-Reader
+        description: Read-only access for Descreat Projects repositories
+        ad_group_name: GRP-Azure-DescreatProjects-Read
+        ad_object_id: c3d4e5f6-a7b8-9012-cdef-123456789012
+
+  - product: SW-Digital-Platform
+    teams:
+      - name: SW-Digital-Platform-Admin
+        description: Admin access for SW Digital Platform repositories
+        ad_group_name: GRP-Azure-SWDigitalPlatform-Admin
+        ad_object_id: d4e5f6a7-b8c9-0123-defa-234567890123
+
+      - name: SW-Digital-Platform-Reader
+        description: Read-only access for SW Digital Platform repositories
+        ad_group_name: GRP-Azure-SWDigitalPlatform-Read
+        ad_object_id: e5f6a7b8-c9d0-1234-efab-345678901234
+
+  - product: API-Ecosystem
+    teams:
+      - name: API-Ecosystem-Admin
+        description: Admin access for API Ecosystem repositories
+        ad_group_name: GRP-Azure-APIEcosystem-Admin
+        ad_object_id: f6a7b8c9-d0e1-2345-fabc-456789012345
+
+      - name: API-Ecosystem-Developer
+        description: Developer write access for API Ecosystem repositories
+        ad_group_name: GRP-Azure-APIEcosystem-Dev
+        ad_object_id: a7b8c9d0-e1f2-3456-abcd-567890123456
+
+  - product: Embeded-pipeline
+    teams:
+      - name: Embeded-pipeline-Developer
+        description: Developer write access for Embeded pipeline repositories
+        ad_group_name: GRP-Azure-EmbededPipeline-Dev
+        ad_object_id: b8c9d0e1-f2a3-4567-bcde-678901234567
+
+      - name: Embeded-pipeline-Reader
+        description: Read-only access for Embeded pipeline repositories
+        ad_group_name: GRP-Azure-EmbededPipeline-Read
+        ad_object_id: c9d0e1f2-a3b4-5678-cdef-789012345678
+
+  - product: 247-planner
+    teams:
+      - name: 247-planner-Admin
+        description: Admin access for 247 Planner repositories
+        ad_group_name: GRP-Azure-247Planner-Admin
+        ad_object_id: d0e1f2a3-b4c5-6789-defa-890123456789
+
+      - name: 247-planner-Developer
+        description: Developer write access for 247 Planner repositories
+        ad_group_name: GRP-Azure-247Planner-Dev
+        ad_object_id: e1f2a3b4-c5d6-7890-efab-901234567890
+
+      - name: 247-planner-Reader
+        description: Read-only access for 247 Planner repositories
+        ad_group_name: GRP-Azure-247Planner-Read
+        ad_object_id: f2a3b4c5-d6e7-8901-fabc-012345678901

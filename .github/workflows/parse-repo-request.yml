@@ -111,3 +111,136 @@ jobs:
             echo "::error::Missing visibility"
             exit 1
           fi
+
+  create-repo:
+    needs: parse-issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create repository
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_ADMIN_TOKEN }}
+          script: |
+            const org = 'jfrog-oidc-test';
+            const repoName = '${{ needs.parse-issue.outputs.full_name }}';
+            const visibility = '${{ needs.parse-issue.outputs.visibility }}';
+            const description = `${{ needs.parse-issue.outputs.description }}`;
+            const product = '${{ needs.parse-issue.outputs.product }}';
+            const tribe = '${{ needs.parse-issue.outputs.tribe }}';
+            const banId = '${{ needs.parse-issue.outputs.ban_id }}';
+
+            console.log(`Creating repo: ${org}/${repoName}`);
+            console.log(`Visibility: ${visibility}`);
+            console.log(`Description: ${description}`);
+
+            try {
+              await github.rest.repos.createInOrg({
+                org: org,
+                name: repoName,
+                description: description,
+                visibility: visibility,
+                auto_init: true,
+                has_issues: true,
+                has_projects: false,
+                has_wiki: false
+              });
+              console.log(`✓ Repository ${org}/${repoName} created successfully`);
+
+              // Add metadata as repo topics
+              const topics = [
+                `product-${product.toLowerCase().replace(/[^a-z0-9-]/g, '-')}`,
+                `tribe-${tribe.toLowerCase().replace(/[^a-z0-9-]/g, '-')}`,
+                `ban-${banId.toLowerCase().replace(/[^a-z0-9-]/g, '-')}`
+              ];
+              await github.rest.repos.replaceAllTopics({
+                owner: org,
+                repo: repoName,
+                names: topics
+              });
+              console.log(`✓ Topics added: ${topics.join(', ')}`);
+            } catch (error) {
+              if (error.status === 422 && error.message.includes('already exists')) {
+                core.warning(`Repository ${repoName} already exists, skipping creation`);
+              } else {
+                core.setFailed(`Failed to create repo: ${error.message}`);
+              }
+            }
+
+  assign-team-access:
+    needs: [parse-issue, create-repo]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse teams config and assign repo access
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_ADMIN_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const product = '${{ needs.parse-issue.outputs.product }}';
+            const repoName = '${{ needs.parse-issue.outputs.full_name }}';
+            const org = 'jfrog-oidc-test';
+
+            // Parse YAML manually (simple line-based parser for our known structure)
+            const content = fs.readFileSync('teams-config.yml', 'utf8');
+            const lines = content.split('\n');
+
+            // Find teams for this product
+            let inProduct = false;
+            let inTeams = false;
+            const teamNames = [];
+
+            for (const line of lines) {
+              if (line.match(/^\s*- product:\s*/)) {
+                const p = line.replace(/^\s*- product:\s*/, '').trim();
+                inProduct = (p === product);
+                inTeams = false;
+              } else if (inProduct && line.match(/^\s*teams:\s*$/)) {
+                inTeams = true;
+              } else if (inProduct && inTeams && line.match(/^\s*- name:\s*/)) {
+                const name = line.replace(/^\s*- name:\s*/, '').trim();
+                teamNames.push(name);
+              } else if (inProduct && inTeams && line.match(/^\s*- product:/)) {
+                break; // next product block
+              }
+            }
+
+            if (teamNames.length === 0) {
+              core.warning(`No teams found for product: ${product}`);
+              return;
+            }
+
+            console.log(`Repo: ${org}/${repoName}`);
+            console.log(`Product: ${product}`);
+            console.log(`Teams found: ${teamNames.join(', ')}`);
+
+            // Map team suffix to GitHub repo permission
+            function getPermission(teamName) {
+              if (teamName.endsWith('-Admin')) return 'admin';
+              if (teamName.endsWith('-Developer')) return 'push';
+              if (teamName.endsWith('-Reader')) return 'pull';
+              return 'pull'; // default
+            }
+
+            for (const teamName of teamNames) {
+              const permission = getPermission(teamName);
+              const slug = teamName.toLowerCase().replace(/\s+/g, '-');
+
+              try {
+                await github.rest.teams.addOrUpdateRepoPermissionsInOrg({
+                  org: org,
+                  team_slug: slug,
+                  owner: org,
+                  repo: repoName,
+                  permission: permission
+                });
+                console.log(`  ✓ ${teamName} → ${permission}`);
+              } catch (error) {
+                core.error(`Failed to assign ${teamName} (${permission}): ${error.message}`);
+              }
+            }
+
+            console.log('\nRepo access assignment complete.');
+

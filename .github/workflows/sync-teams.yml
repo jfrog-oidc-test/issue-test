@@ -16,15 +16,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Parse YAML config
+        id: config
+        run: |
+          sudo apt-get install -y python3-yaml > /dev/null 2>&1
+          CONFIG_JSON=$(python3 -c "
+          import yaml, json, sys
+          with open('teams-config.yml') as f:
+              data = yaml.safe_load(f)
+          json.dump(data, sys.stdout)
+          ")
+          echo "json<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONFIG_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create/Update teams from config
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.ORG_ADMIN_TOKEN }}
           script: |
-            const fs = require('fs');
-            const yaml = require('js-yaml');
-
-            const config = yaml.load(fs.readFileSync('teams-config.yml', 'utf8'));
+            const config = JSON.parse(`${{ steps.config.outputs.json }}`);
             const org = config.org;
 
             console.log(`Organization: ${org}`);

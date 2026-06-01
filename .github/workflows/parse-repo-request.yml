@@ -2,7 +2,7 @@ name: Parse Repo Request
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
 
 jobs:
   parse-issue:
@@ -146,18 +146,18 @@ jobs:
               });
               console.log(`✓ Repository ${org}/${repoName} created successfully`);
 
-              // Add metadata as repo topics
-              const topics = [
-                `product-${product.toLowerCase().replace(/[^a-z0-9-]/g, '-')}`,
-                `tribe-${tribe.toLowerCase().replace(/[^a-z0-9-]/g, '-')}`,
-                `ban-${banId.toLowerCase().replace(/[^a-z0-9-]/g, '-')}`
+              // Add metadata as custom properties
+              const properties = [
+                { property_name: 'product', value: product },
+                { property_name: 'tribe', value: tribe },
+                { property_name: 'ban', value: banId }
               ];
-              await github.rest.repos.replaceAllTopics({
-                owner: org,
-                repo: repoName,
-                names: topics
+              await github.request('PATCH /orgs/{org}/properties/values', {
+                org: org,
+                repository_names: [repoName],
+                properties: properties
               });
-              console.log(`✓ Topics added: ${topics.join(', ')}`);
+              console.log(`✓ Custom properties set: product=${product}, tribe=${tribe}, ban=${banId}`);
             } catch (error) {
               if (error.status === 422 && error.message.includes('already exists')) {
                 core.warning(`Repository ${repoName} already exists, skipping creation`);

@@ -16,74 +16,79 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Parse YAML config
-        id: config
-        run: |
-          sudo apt-get install -y python3-yaml > /dev/null 2>&1
-          CONFIG_JSON=$(python3 -c "
-          import yaml, json, sys
-          with open('teams-config.yml') as f:
-              data = yaml.safe_load(f)
-          json.dump(data, sys.stdout)
-          ")
-          echo "json<<EOF" >> $GITHUB_OUTPUT
-          echo "$CONFIG_JSON" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Create/Update teams from config
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.ORG_ADMIN_TOKEN }}
-          script: |
-            const config = JSON.parse(`${{ steps.config.outputs.json }}`);
-            const org = config.org;
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+        run: |
+          pip install requests pyyaml > /dev/null 2>&1
+          python3 << 'EOF'
+          import os
+          import yaml
+          import requests
+          import sys
 
-            console.log(`Organization: ${org}`);
+          token = os.environ['GH_TOKEN']
 
-            for (const product of config.teams) {
-              console.log(`\nProduct: ${product.product}`);
+          with open('teams-config.yml') as f:
+              config = yaml.safe_load(f)
 
-              for (const team of product.teams) {
-                console.log(`  Processing team: ${team.name}`);
+          org = config['org']
+          headers = {
+              'Authorization': f'token {token}',
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28'
+          }
 
-                try {
-                  // Check if team already exists
-                  const slug = team.name.toLowerCase().replace(/\s+/g, '-');
-                  let existing = null;
+          print(f'Organization: {org}')
 
-                  try {
-                    existing = await github.rest.teams.getByName({
-                      org: org,
-                      team_slug: slug
-                    });
-                  } catch (e) {
-                    if (e.status !== 404) throw e;
-                  }
+          for product in config.get('teams', []):
+              print(f'\nProduct: {product["product"]}')
 
-                  if (existing) {
-                    // Update existing team
-                    await github.rest.teams.updateInOrg({
-                      org: org,
-                      team_slug: slug,
-                      name: team.name,
-                      description: team.description,
-                      privacy: 'closed'
-                    });
-                    console.log(`    ✓ Updated team: ${team.name}`);
-                  } else {
-                    // Create new team
-                    await github.rest.teams.create({
-                      org: org,
-                      name: team.name,
-                      description: team.description,
-                      privacy: 'closed'
-                    });
-                    console.log(`    ✓ Created team: ${team.name}`);
-                  }
-                } catch (error) {
-                  core.error(`Failed to sync team ${team.name}: ${error.message}`);
-                }
-              }
-            }
+              for team in product.get('teams', []):
+                  name = team['name']
+                  description = team.get('description', '')
+                  slug = name.lower().replace(' ', '-')
 
-            console.log('\nTeam sync complete.');
+                  print(f'  Processing team: {name}')
+
+                  # Check if team exists
+                  r = requests.get(
+                      f'https://api.github.com/orgs/{org}/teams/{slug}',
+                      headers=headers
+                  )
+
+                  if r.status_code == 200:
+                      # Update existing team
+                      r = requests.patch(
+                          f'https://api.github.com/orgs/{org}/teams/{slug}',
+                          headers=headers,
+                          json={
+                              'name': name,
+                              'description': description,
+                              'privacy': 'closed'
+                          }
+                      )
+                      if r.status_code == 200:
+                          print(f'    ✓ Updated team: {name}')
+                      else:
+                          print(f'    ::error::Failed to update {name}: {r.status_code} {r.text}')
+                  elif r.status_code == 404:
+                      # Create new team
+                      r = requests.post(
+                          f'https://api.github.com/orgs/{org}/teams',
+                          headers=headers,
+                          json={
+                              'name': name,
+                              'description': description,
+                              'privacy': 'closed'
+                          }
+                      )
+                      if r.status_code == 201:
+                          print(f'    ✓ Created team: {name}')
+                      else:
+                          print(f'    ::error::Failed to create {name}: {r.status_code} {r.text}')
+                  else:
+                      print(f'    ::error::Failed to check team {name}: {r.status_code} {r.text}')
+
+          print('\nTeam sync complete.')
+          EOF

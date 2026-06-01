@@ -21,171 +21,185 @@ jobs:
     steps:
       - name: Parse issue body
         id: parse
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = context.payload.issue.body || '';
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          python3 << 'EOF'
+          import os
+          import re
 
-            // Extract full repo name from: **Full repo name:** `prefix-name`
-            const fullNameMatch = body.match(/\*\*Full repo name:\*\*\s*`([^`]+)`/);
-            const fullName = fullNameMatch ? fullNameMatch[1] : '';
+          body = os.environ.get('ISSUE_BODY', '')
 
-            // Extract table fields
-            function extractTableField(fieldName) {
-              // Matches: | Field Name | `value` | or | Field Name | value |
-              const escaped = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              const regex = new RegExp(`\\|\\s*${escaped}\\s*\\|\\s*\`?([^\`|]+)\`?\\s*\\|?`);
-              const match = body.match(regex);
-              return match ? match[1].trim() : '';
-            }
+          # Extract full repo name from: **Full repo name:** `prefix-name`
+          full_name_match = re.search(r'\*\*Full repo name:\*\*\s*`([^`]+)`', body)
+          full_name = full_name_match.group(1) if full_name_match else ''
 
-            const prefix = extractTableField('Repository prefix');
-            const repoName = extractTableField('Repository name');
-            const product = extractTableField('Product');
-            const tribe = extractTableField('Tribe');
-            const banId = extractTableField('BAN ID');
-            const visibility = extractTableField('Visibility');
+          # Extract table fields
+          def extract_table_field(field_name):
+              escaped = re.escape(field_name)
+              pattern = rf'\|\s*{escaped}\s*\|\s*`?([^`|]+)`?\s*\|?'
+              match = re.search(pattern, body)
+              return match.group(1).strip() if match else ''
 
-            // Extract description from: ### Description\n<text>
-            const descMatch = body.match(/###\s*Description\s*\n([\s\S]*?)$/);
-            const description = descMatch ? descMatch[1].trim() : '';
+          prefix = extract_table_field('Repository prefix')
+          repo_name = extract_table_field('Repository name')
+          product = extract_table_field('Product')
+          tribe = extract_table_field('Tribe')
+          ban_id = extract_table_field('BAN ID')
+          visibility = extract_table_field('Visibility')
 
-            // Set outputs
-            core.setOutput('full_name', fullName);
-            core.setOutput('prefix', prefix);
-            core.setOutput('repo_name', repoName);
-            core.setOutput('product', product);
-            core.setOutput('tribe', tribe);
-            core.setOutput('ban_id', banId);
-            core.setOutput('visibility', visibility);
-            core.setOutput('description', description);
+          # Extract description from: ### Description\n<text>
+          desc_match = re.search(r'###\s*Description\s*\n([\s\S]*?)$', body)
+          description = desc_match.group(1).strip() if desc_match else ''
 
-            // Log parsed values
-            core.info(`Full Name: ${fullName}`);
-            core.info(`Prefix: ${prefix}`);
-            core.info(`Repo Name: ${repoName}`);
-            core.info(`Product: ${product}`);
-            core.info(`Tribe: ${tribe}`);
-            core.info(`BAN ID: ${banId}`);
-            core.info(`Visibility: ${visibility}`);
-            core.info(`Description: ${description}`);
+          # Set outputs
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'full_name={full_name}\n')
+              f.write(f'prefix={prefix}\n')
+              f.write(f'repo_name={repo_name}\n')
+              f.write(f'product={product}\n')
+              f.write(f'tribe={tribe}\n')
+              f.write(f'ban_id={ban_id}\n')
+              f.write(f'visibility={visibility}\n')
+              f.write(f'description={description}\n')
+
+          # Log parsed values
+          print(f'Full Name: {full_name}')
+          print(f'Prefix: {prefix}')
+          print(f'Repo Name: {repo_name}')
+          print(f'Product: {product}')
+          print(f'Tribe: {tribe}')
+          print(f'BAN ID: {ban_id}')
+          print(f'Visibility: {visibility}')
+          print(f'Description: {description}')
+          EOF
 
       - name: Validate parsed data
         run: |
-          echo "=== Parsed Issue Data ==="
-          echo "Full Name:   ${{ steps.parse.outputs.full_name }}"
-          echo "Prefix:      ${{ steps.parse.outputs.prefix }}"
-          echo "Repo Name:   ${{ steps.parse.outputs.repo_name }}"
-          echo "Product:     ${{ steps.parse.outputs.product }}"
-          echo "Tribe:       ${{ steps.parse.outputs.tribe }}"
-          echo "BAN ID:      ${{ steps.parse.outputs.ban_id }}"
-          echo "Visibility:  ${{ steps.parse.outputs.visibility }}"
-          echo "Description: ${{ steps.parse.outputs.description }}"
+          python3 << 'EOF'
+          import sys
 
-          # Fail if required fields are missing
-          if [ -z "${{ steps.parse.outputs.full_name }}" ]; then
-            echo "::error::Missing full_name"
-            exit 1
-          fi
-          if [ -z "${{ steps.parse.outputs.prefix }}" ]; then
-            echo "::error::Missing prefix"
-            exit 1
-          fi
-          if [ -z "${{ steps.parse.outputs.repo_name }}" ]; then
-            echo "::error::Missing repo_name"
-            exit 1
-          fi
-          if [ -z "${{ steps.parse.outputs.product }}" ]; then
-            echo "::error::Missing product"
-            exit 1
-          fi
-          if [ -z "${{ steps.parse.outputs.tribe }}" ]; then
-            echo "::error::Missing tribe"
-            exit 1
-          fi
-          if [ -z "${{ steps.parse.outputs.ban_id }}" ]; then
-            echo "::error::Missing ban_id"
-            exit 1
-          fi
-          if [ -z "${{ steps.parse.outputs.visibility }}" ]; then
-            echo "::error::Missing visibility"
-            exit 1
-          fi
+          fields = {
+              'full_name': '${{ steps.parse.outputs.full_name }}',
+              'prefix': '${{ steps.parse.outputs.prefix }}',
+              'repo_name': '${{ steps.parse.outputs.repo_name }}',
+              'product': '${{ steps.parse.outputs.product }}',
+              'tribe': '${{ steps.parse.outputs.tribe }}',
+              'ban_id': '${{ steps.parse.outputs.ban_id }}',
+              'visibility': '${{ steps.parse.outputs.visibility }}',
+          }
+
+          print('=== Parsed Issue Data ===')
+          for key, val in fields.items():
+              print(f'  {key}: {val}')
+
+          missing = [k for k, v in fields.items() if not v]
+          if missing:
+              for m in missing:
+                  print(f'::error::Missing {m}')
+              sys.exit(1)
+          EOF
 
   create-repo:
     needs: parse-issue
     runs-on: ubuntu-latest
     steps:
-      - name: Create repository
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.ORG_ADMIN_TOKEN }}
-          script: |
-            const org = 'jfrog-oidc-test';
-            const repoName = '${{ needs.parse-issue.outputs.full_name }}';
-            const visibility = '${{ needs.parse-issue.outputs.visibility }}';
-            const description = `${{ needs.parse-issue.outputs.description }}`;
-            const product = '${{ needs.parse-issue.outputs.product }}';
-            const tribe = '${{ needs.parse-issue.outputs.tribe }}';
-            const banId = '${{ needs.parse-issue.outputs.ban_id }}';
+      - name: Create repository and set custom properties
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+          ORG: jfrog-oidc-test
+          REPO_NAME: ${{ needs.parse-issue.outputs.full_name }}
+          VISIBILITY: ${{ needs.parse-issue.outputs.visibility }}
+          DESCRIPTION: ${{ needs.parse-issue.outputs.description }}
+          PRODUCT: ${{ needs.parse-issue.outputs.product }}
+          TRIBE: ${{ needs.parse-issue.outputs.tribe }}
+          BAN_ID: ${{ needs.parse-issue.outputs.ban_id }}
+        run: |
+          pip install requests > /dev/null 2>&1
+          python3 << 'EOF'
+          import os
+          import requests
+          import sys
 
-            console.log(`Creating repo: ${org}/${repoName}`);
-            console.log(`Visibility: ${visibility}`);
-            console.log(`Description: ${description}`);
+          token = os.environ['GH_TOKEN']
+          org = os.environ['ORG']
+          repo_name = os.environ['REPO_NAME']
+          visibility = os.environ['VISIBILITY']
+          description = os.environ['DESCRIPTION']
+          product = os.environ['PRODUCT']
+          tribe = os.environ['TRIBE']
+          ban_id = os.environ['BAN_ID']
 
-            try {
-              await github.rest.repos.createInOrg({
-                org: org,
-                name: repoName,
-                description: description,
-                visibility: visibility,
-                auto_init: true,
-                has_issues: true,
-                has_projects: false,
-                has_wiki: false
-              });
-              console.log(`✓ Repository ${org}/${repoName} created successfully`);
+          headers = {
+              'Authorization': f'token {token}',
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28'
+          }
 
-              // Ensure custom properties exist at org level
-              const propDefs = [
-                { name: 'product', description: 'Product name' },
-                { name: 'tribe', description: 'Tribe name' },
-                { name: 'ban', description: 'BAN ID' }
-              ];
-              for (const prop of propDefs) {
-                try {
-                  await github.request('PUT /orgs/{org}/properties/schema/{custom_property_name}', {
-                    org: org,
-                    custom_property_name: prop.name,
-                    value_type: 'string',
-                    required: false,
-                    description: prop.description
-                  });
-                } catch (e) {
-                  // Property may already exist, continue
-                  console.log(`  Property '${prop.name}': ${e.status === 422 ? 'already exists' : e.message}`);
-                }
+          # Create repository
+          print(f'Creating repo: {org}/{repo_name}')
+          resp = requests.post(
+              f'https://api.github.com/orgs/{org}/repos',
+              headers=headers,
+              json={
+                  'name': repo_name,
+                  'description': description,
+                  'visibility': visibility,
+                  'auto_init': True,
+                  'has_issues': True,
+                  'has_projects': False,
+                  'has_wiki': False
               }
+          )
 
-              // Set custom property values on the repo
-              const properties = [
-                { property_name: 'product', value: product },
-                { property_name: 'tribe', value: tribe },
-                { property_name: 'ban', value: banId }
-              ];
-              await github.request('PATCH /orgs/{org}/properties/values', {
-                org: org,
-                repository_names: [repoName],
-                properties: properties
-              });
-              console.log(`✓ Custom properties set: product=${product}, tribe=${tribe}, ban=${banId}`);
-            } catch (error) {
-              if (error.status === 422 && error.message.includes('already exists')) {
-                core.warning(`Repository ${repoName} already exists, skipping creation`);
-              } else {
-                core.setFailed(`Failed to create repo: ${error.message}`);
+          if resp.status_code == 201:
+              print(f'✓ Repository {org}/{repo_name} created successfully')
+          elif resp.status_code == 422 and 'already exists' in resp.text:
+              print(f'::warning::Repository {repo_name} already exists, skipping creation')
+          else:
+              print(f'::error::Failed to create repo: {resp.status_code} {resp.text}')
+              sys.exit(1)
+
+          # Ensure custom properties exist at org level
+          prop_defs = [
+              {'name': 'product', 'description': 'Product name'},
+              {'name': 'tribe', 'description': 'Tribe name'},
+              {'name': 'ban', 'description': 'BAN ID'}
+          ]
+          for prop in prop_defs:
+              r = requests.put(
+                  f'https://api.github.com/orgs/{org}/properties/schema/{prop["name"]}',
+                  headers=headers,
+                  json={
+                      'value_type': 'string',
+                      'required': False,
+                      'description': prop['description']
+                  }
+              )
+              if r.status_code in (200, 201):
+                  print(f'  Property "{prop["name"]}" ensured')
+              else:
+                  print(f'  Property "{prop["name"]}": {r.status_code} (may already exist)')
+
+          # Set custom property values on the repo
+          r = requests.patch(
+              f'https://api.github.com/orgs/{org}/properties/values',
+              headers=headers,
+              json={
+                  'repository_names': [repo_name],
+                  'properties': [
+                      {'property_name': 'product', 'value': product},
+                      {'property_name': 'tribe', 'value': tribe},
+                      {'property_name': 'ban', 'value': ban_id}
+                  ]
               }
-            }
+          )
+          if r.status_code in (200, 204):
+              print(f'✓ Custom properties set: product={product}, tribe={tribe}, ban={ban_id}')
+          else:
+              print(f'::error::Failed to set custom properties: {r.status_code} {r.text}')
+              sys.exit(1)
+          EOF
 
   assign-team-access:
     needs: [parse-issue, create-repo]
@@ -194,74 +208,75 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Parse teams config and assign repo access
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.ORG_ADMIN_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const product = '${{ needs.parse-issue.outputs.product }}';
-            const repoName = '${{ needs.parse-issue.outputs.full_name }}';
-            const org = 'jfrog-oidc-test';
+      - name: Assign team access to repo
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+          ORG: jfrog-oidc-test
+          REPO_NAME: ${{ needs.parse-issue.outputs.full_name }}
+          PRODUCT: ${{ needs.parse-issue.outputs.product }}
+        run: |
+          pip install requests pyyaml > /dev/null 2>&1
+          python3 << 'EOF'
+          import os
+          import yaml
+          import requests
+          import sys
 
-            // Parse YAML manually (simple line-based parser for our known structure)
-            const content = fs.readFileSync('teams-config.yml', 'utf8');
-            const lines = content.split('\n');
+          token = os.environ['GH_TOKEN']
+          org = os.environ['ORG']
+          repo_name = os.environ['REPO_NAME']
+          product = os.environ['PRODUCT']
 
-            // Find teams for this product
-            let inProduct = false;
-            let inTeams = false;
-            const teamNames = [];
+          headers = {
+              'Authorization': f'token {token}',
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28'
+          }
 
-            for (const line of lines) {
-              if (line.match(/^\s*- product:\s*/)) {
-                const p = line.replace(/^\s*- product:\s*/, '').trim();
-                inProduct = (p === product);
-                inTeams = false;
-              } else if (inProduct && line.match(/^\s*teams:\s*$/)) {
-                inTeams = true;
-              } else if (inProduct && inTeams && line.match(/^\s*- name:\s*/)) {
-                const name = line.replace(/^\s*- name:\s*/, '').trim();
-                teamNames.push(name);
-              } else if (inProduct && inTeams && line.match(/^\s*- product:/)) {
-                break; // next product block
-              }
-            }
+          # Load teams config
+          with open('teams-config.yml') as f:
+              config = yaml.safe_load(f)
 
-            if (teamNames.length === 0) {
-              core.warning(`No teams found for product: ${product}`);
-              return;
-            }
+          # Find teams for this product
+          team_names = []
+          for entry in config.get('teams', []):
+              if entry.get('product') == product:
+                  for team in entry.get('teams', []):
+                      team_names.append(team['name'])
+                  break
 
-            console.log(`Repo: ${org}/${repoName}`);
-            console.log(`Product: ${product}`);
-            console.log(`Teams found: ${teamNames.join(', ')}`);
+          if not team_names:
+              print(f'::warning::No teams found for product: {product}')
+              sys.exit(0)
 
-            // Map team suffix to GitHub repo permission
-            function getPermission(teamName) {
-              if (teamName.endsWith('-Admin')) return 'admin';
-              if (teamName.endsWith('-Developer')) return 'push';
-              if (teamName.endsWith('-Reader')) return 'pull';
-              return 'pull'; // default
-            }
+          print(f'Repo: {org}/{repo_name}')
+          print(f'Product: {product}')
+          print(f'Teams found: {", ".join(team_names)}')
 
-            for (const teamName of teamNames) {
-              const permission = getPermission(teamName);
-              const slug = teamName.toLowerCase().replace(/\s+/g, '-');
+          # Map team suffix to GitHub repo permission
+          def get_permission(name):
+              if name.endswith('-Admin'):
+                  return 'admin'
+              elif name.endswith('-Developer'):
+                  return 'push'
+              elif name.endswith('-Reader'):
+                  return 'pull'
+              return 'pull'
 
-              try {
-                await github.rest.teams.addOrUpdateRepoPermissionsInOrg({
-                  org: org,
-                  team_slug: slug,
-                  owner: org,
-                  repo: repoName,
-                  permission: permission
-                });
-                console.log(`  ✓ ${teamName} → ${permission}`);
-              } catch (error) {
-                core.error(`Failed to assign ${teamName} (${permission}): ${error.message}`);
-              }
-            }
+          for team_name in team_names:
+              permission = get_permission(team_name)
+              slug = team_name.lower().replace(' ', '-')
 
-            console.log('\nRepo access assignment complete.');
+              r = requests.put(
+                  f'https://api.github.com/orgs/{org}/teams/{slug}/repos/{org}/{repo_name}',
+                  headers=headers,
+                  json={'permission': permission}
+              )
+              if r.status_code in (200, 204):
+                  print(f'  ✓ {team_name} → {permission}')
+              else:
+                  print(f'  ::error::Failed to assign {team_name} ({permission}): {r.status_code} {r.text}')
+
+          print('\nRepo access assignment complete.')
+          EOF
 

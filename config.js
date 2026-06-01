@@ -83,8 +83,7 @@ window.APP_CONFIG = {
     },
     'Embeded-pipeline': {
       tribes: ['DevOps'],
-      prefixes: ['ESD'],
-      bans: ['BAN-4001']
+      prefixes: ['esd']
     },
     '247-planner': {
       tribes: ['PRM'],

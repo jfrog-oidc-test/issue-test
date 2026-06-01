@@ -57,6 +57,11 @@ teams:
         ad_group_name: GRP-Azure-EmbededPipeline-Read
         ad_object_id: c9d0e1f2-a3b4-5678-cdef-789012345678
 
+      - name: Embeded-pipeline-Admin
+        description: Admin access for Embeded pipeline repositories
+        ad_group_name: GRP-Azure-EmbededPipeline-Admin
+        ad_object_id: c9d0e1f2-a3b4-5678-cdef-789012345678
+
   - product: 247-planner
     teams:
       - name: 247-planner-Admin

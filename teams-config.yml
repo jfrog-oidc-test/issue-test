@@ -8,7 +8,7 @@ teams:
     teams:
       - name: Descreat-Projects-Admin
         description: Admin access for Descreat Projects repositories
-        ad_group_name: GRP-Azure-DescreatProjects-Admin
+        ad_group_name: Azure-DescreatProjects-Admin
         ad_object_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
       - name: Descreat-Projects-Developer

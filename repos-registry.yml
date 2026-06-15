@@ -42,3 +42,9 @@ repositories:
   - API-Ecosystem-Admin
   - API-Ecosystem-Developer
   cross_team_access: []
+- name: planner-mykone
+  teams:
+  - 247-planner-Admin
+  - 247-planner-Developer
+  - 247-planner-Reader
+  cross_team_access: []

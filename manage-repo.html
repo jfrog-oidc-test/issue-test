@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Repository</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f6f8fa;
+      color: #1f2328;
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+      padding: 2rem 2.25rem;
+    }
+    header { margin-bottom: 1.5rem; }
+    header h1 { margin: 0 0 0.4rem; font-size: 24px; font-weight: 600; }
+    .subtitle { margin: 0; color: #57606a; font-size: 14px; }
+
+    .nav-link {
+      display: inline-block; margin-bottom: 1rem;
+      font-size: 13px; color: #0969da; text-decoration: none;
+    }
+    .nav-link:hover { text-decoration: underline; }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 0; border-bottom: 1px solid #d0d7de; margin-bottom: 1.5rem;
+    }
+    .tab {
+      padding: 10px 18px; font-size: 14px; font-weight: 500;
+      cursor: pointer; border: none; background: none; color: #57606a;
+      border-bottom: 2px solid transparent; transition: all 0.15s;
+    }
+    .tab:hover { color: #1f2328; }
+    .tab.active { color: #0969da; border-bottom-color: #0969da; font-weight: 600; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Form */
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .field .hint { font-size: 12px; color: #6e7781; margin-bottom: 6px; }
+    .field .required { color: #cf222e; }
+
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 8px 11px; font-size: 14px; font-family: inherit;
+      background: #fff; border: 1px solid #d0d7de; border-radius: 6px;
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: #0969da;
+      box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+    }
+    .field textarea { resize: vertical; min-height: 70px; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 540px) { .row { grid-template-columns: 1fr; } }
+
+    .checkbox-group { margin-top: 8px; }
+    .checkbox-group label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 400; cursor: pointer;
+      padding: 6px 0;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: auto; margin: 0;
+    }
+
+    /* Submit */
+    .submit {
+      width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
+      background: #1f883d; color: #fff; border: none; border-radius: 6px;
+      cursor: pointer; transition: background 0.15s, opacity 0.15s; margin-top: 8px;
+    }
+    .submit:hover:not(:disabled) { background: #1a7f37; }
+    .submit:disabled { background: #94d3a2; cursor: not-allowed; }
+
+    /* Result section */
+    .result {
+      display: none;
+      margin-top: 1.5rem;
+      padding: 16px;
+      background: #dafbe1;
+      border: 1px solid #1a7f37;
+      border-radius: 8px;
+    }
+    .result.show { display: block; }
+    .result h3 { margin: 0 0 10px; font-size: 14px; color: #116329; }
+    .result pre {
+      background: #fff;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 0;
+      font-size: 13px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .result-actions {
+      display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+    }
+    .btn {
+      background: #fff; color: #1f2328; border: 1px solid #d0d7de;
+      padding: 6px 12px; font-size: 13px; font-weight: 500;
+      border-radius: 6px; cursor: pointer; transition: background 0.15s;
+    }
+    .btn:hover { background: #f6f8fa; }
+    .btn.primary { background: #0969da; color: #fff; border-color: #0969da; }
+    .btn.primary:hover { background: #0860c4; }
+
+    .info-box {
+      background: #ddf4ff; border: 1px solid #54aeff;
+      border-radius: 6px; padding: 10px 14px;
+      font-size: 13px; color: #0969da; margin-bottom: 1rem;
+    }
+
+    footer {
+      margin-top: 1.5rem; padding-top: 1.25rem;
+      border-top: 1px solid #d0d7de; text-align: center;
+    }
+    footer p { margin: 0; font-size: 12px; color: #6e7781; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="nav-link">← Back to New Repository Request</a>
+
+    <header>
+      <h1>⚙️ Manage Repository</h1>
+      <p class="subtitle">Update repo metadata, rename, or grant cross-team access.</p>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="update">Update Metadata / Rename</button>
+      <button class="tab" data-tab="cross-team">Cross-Team Access</button>
+    </div>
+
+    <!-- Tab 1: Update Metadata / Rename -->
+    <div class="tab-content active" id="tab-update">
+      <div class="info-box">
+        Leave fields blank if you don't want to change them. Only filled fields will be updated.
+      </div>
+
+      <form id="updateForm" autocomplete="off">
+        <div class="field">
+          <label for="upRepoName">Current repository name <span class="required">*</span></label>
+          <div class="hint">The full name of the existing repo (e.g. api-customer-portal)</div>
+          <input id="upRepoName" type="text" placeholder="prefix-repo-name" required />
+        </div>
+
+        <div class="field">
+          <label for="upNewName">New repository name</label>
+          <div class="hint">Leave blank to keep current name. Lowercase, hyphens only.</div>
+          <input id="upNewName" type="text" placeholder="new-repo-name" />
+        </div>
+
+        <div class="field">
+          <label for="upDescription">New description</label>
+          <div class="hint">Leave blank to keep current description</div>
+          <textarea id="upDescription" rows="2" maxlength="800" placeholder="Updated description..."></textarea>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="upVisibility">Change visibility</label>
+            <select id="upVisibility">
+              <option value="">— no change —</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="upProduct">Change product</label>
+            <select id="upProduct">
+              <option value="">— no change —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="upTribe">Change tribe</label>
+            <select id="upTribe">
+              <option value="">— no change —</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="upBan">Change BAN ID</label>
+            <input id="upBan" type="text" placeholder="BAN-XXXXX" />
+          </div>
+        </div>
+
+        <button type="submit" class="submit" id="updateSubmit" disabled>
+          Submit update request on GitHub
+        </button>
+      </form>
+    </div>
+
+    <!-- Tab 2: Cross-Team Access -->
+    <div class="tab-content" id="tab-cross-team">
+      <div class="info-box">
+        Grant teams from other products access to your repository.
+      </div>
+
+      <form id="crossTeamForm" autocomplete="off">
+        <div class="field">
+          <label for="ctRepoName">Repository name <span class="required">*</span></label>
+          <div class="hint">The full name of the existing repo (e.g. api-customer-portal)</div>
+          <input id="ctRepoName" type="text" placeholder="prefix-repo-name" required />
+        </div>
+
+        <div class="field">
+          <label for="ctProduct">Grant access to teams from product <span class="required">*</span></label>
+          <div class="hint">Select the product whose teams should get access</div>
+          <select id="ctProduct" required>
+            <option value="">— select product —</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Select teams and permissions <span class="required">*</span></label>
+          <div class="hint">Choose which teams to grant access and their permission level</div>
+          <div class="checkbox-group" id="ctTeams">
+            <p style="color:#6e7781; font-size:13px; font-style:italic;">Select a product above to see available teams</p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="ctPermission">Default permission level <span class="required">*</span></label>
+          <div class="hint">Applied to all selected teams (overrides suffix-based defaults)</div>
+          <select id="ctPermission" required>
+            <option value="">— select permission —</option>
+            <option value="pull">Read (pull)</option>
+            <option value="push">Write (push)</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="ctReason">Reason for cross-team access <span class="required">*</span></label>
+          <div class="hint">Briefly explain why these teams need access</div>
+          <textarea id="ctReason" rows="2" placeholder="e.g. Shared library dependency, joint development..." required></textarea>
+        </div>
+
+        <button type="submit" class="submit" id="crossTeamSubmit" disabled>
+          Submit cross-team access request on GitHub
+        </button>
+      </form>
+    </div>
+
+    <!-- Result -->
+    <section class="result" id="result">
+      <h3>✅ Issue creation page opened in a new tab</h3>
+      <p style="margin:0 0 10px; font-size:13px; color:#116329;">
+        We've opened GitHub's "New Issue" page with your request pre-filled.
+        Just click <strong>Submit new issue</strong> on GitHub to finalize it.
+      </p>
+      <p style="margin:0 0 10px; font-size:13px; color:#116329;">
+        Tab didn't open? <a id="issueLink" href="#" target="_blank" rel="noopener" style="color:#0969da; font-weight:600;">Click here to open it manually →</a>
+      </p>
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer; font-size:13px; font-weight:500; color:#116329;">
+          View / copy the request content
+        </summary>
+        <pre id="resultText" style="margin-top:8px;"></pre>
+        <div class="result-actions">
+          <button type="button" class="btn primary" id="copyBtn">📋 Copy to clipboard</button>
+          <button type="button" class="btn" id="resetBtn">↺ Start over</button>
+        </div>
+      </details>
+    </section>
+
+    <footer>
+      <p>Submitting opens a pre-filled GitHub issue page in a new tab. You'll review and confirm the issue on GitHub.</p>
+    </footer>
+  </div>
+
+  <script src="config.js?v=2"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const CFG = window.APP_CONFIG;
+      if (!CFG) {
+        document.body.innerHTML =
+          '<div style="max-width:600px;margin:3rem auto;font-family:sans-serif;padding:1.5rem;border:1px solid #cf222e;border-radius:8px;background:#ffebe9;color:#82071e">' +
+          '<strong>Configuration not loaded.</strong></div>';
+        return;
+      }
+
+      const ISSUE_REPO = CFG.ISSUE_REPO;
+      const MANAGE_LABELS = CFG.MANAGE_LABELS || ['repo-manage'];
+      const PRODUCT_MAP = CFG.PRODUCT_MAP || {};
+      const $ = (id) => document.getElementById(id);
+
+      // === Tab switching ===
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+          $('result').classList.remove('show');
+        });
+      });
+
+      // === Populate dropdowns ===
+      // Visibility
+      (CFG.VISIBILITY || []).forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.value;
+        opt.textContent = v.label;
+        $('upVisibility').appendChild(opt);
+      });
+
+      // Products
+      (CFG.PRODUCTS || []).forEach(p => {
+        ['upProduct', 'ctProduct'].forEach(id => {
+          const opt = document.createElement('option');
+          opt.value = p;
+          opt.textContent = p;
+          $(id).appendChild(opt);
+        });
+      });
+
+      // Tribes
+      (CFG.TRIBES || []).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        $('upTribe').appendChild(opt);
+      });
+
+      // === Update form validation ===
+      function validateUpdate() {
+        const repoName = $('upRepoName').value.trim();
+        const hasChange = $('upNewName').value.trim() ||
+                          $('upDescription').value.trim() ||
+                          $('upVisibility').value ||
+                          $('upProduct').value ||
+                          $('upTribe').value ||
+                          $('upBan').value.trim();
+        $('updateSubmit').disabled = !(repoName && hasChange);
+      }
+
+      ['upRepoName','upNewName','upDescription','upVisibility','upProduct','upTribe','upBan'].forEach(id => {
+        $(id).addEventListener('input', validateUpdate);
+        $(id).addEventListener('change', validateUpdate);
+      });
+
+      // === Cross-team form: show teams on product change ===
+      $('ctProduct').addEventListener('change', function () {
+        const product = this.value;
+        const container = $('ctTeams');
+        container.innerHTML = '';
+
+        if (!product) {
+          container.innerHTML = '<p style="color:#6e7781; font-size:13px; font-style:italic;">Select a product above to see available teams</p>';
+          validateCrossTeam();
+          return;
+        }
+
+        // Find teams for product from teams-config structure (we infer from PRODUCT_MAP names)
+        // We use convention: Product has teams named Product-Admin, Product-Developer, Product-Reader
+        const teamSuffixes = ['Admin', 'Developer', 'Reader'];
+        teamSuffixes.forEach(suffix => {
+          const teamName = `${product}-${suffix}`;
+          const label = document.createElement('label');
+          label.innerHTML = `<input type="checkbox" name="ctTeamSelect" value="${teamName}" /> ${teamName}`;
+          container.appendChild(label);
+        });
+
+        // Add event listeners to checkboxes
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.addEventListener('change', validateCrossTeam);
+        });
+        validateCrossTeam();
+      });
+
+      function validateCrossTeam() {
+        const repo = $('ctRepoName').value.trim();
+        const product = $('ctProduct').value;
+        const permission = $('ctPermission').value;
+        const reason = $('ctReason').value.trim();
+        const teams = document.querySelectorAll('input[name="ctTeamSelect"]:checked');
+        $('crossTeamSubmit').disabled = !(repo && product && permission && reason && teams.length > 0);
+      }
+
+      ['ctRepoName', 'ctProduct', 'ctPermission', 'ctReason'].forEach(id => {
+        $(id).addEventListener('input', validateCrossTeam);
+        $(id).addEventListener('change', validateCrossTeam);
+      });
+
+      // === Submit: Update Metadata ===
+      $('updateForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const repoName = $('upRepoName').value.trim();
+        const newName = $('upNewName').value.trim();
+        const description = $('upDescription').value.trim();
+        const visibility = $('upVisibility').value;
+        const product = $('upProduct').value;
+        const tribe = $('upTribe').value;
+        const ban = $('upBan').value.trim();
+
+        let body = `### Repository Update Request\n\n`;
+        body += `**Repository:** \`${repoName}\`\n\n`;
+        body += `| Field | New Value |\n|---|---|\n`;
+
+        if (newName) body += `| New Name | \`${newName}\` |\n`;
+        if (description) body += `| Description | ${description} |\n`;
+        if (visibility) body += `| Visibility | ${visibility} |\n`;
+        if (product) body += `| Product | ${product} |\n`;
+        if (tribe) body += `| Tribe | ${tribe} |\n`;
+        if (ban) body += `| BAN ID | ${ban} |\n`;
+
+        const title = newName
+          ? `[Repo Update]: ${repoName} → ${newName}`
+          : `[Repo Update]: ${repoName}`;
+
+        submitIssue(title, body);
+      });
+
+      // === Submit: Cross-Team Access ===
+      $('crossTeamForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const repoName = $('ctRepoName').value.trim();
+        const product = $('ctProduct').value;
+        const permission = $('ctPermission').value;
+        const reason = $('ctReason').value.trim();
+        const teams = Array.from(document.querySelectorAll('input[name="ctTeamSelect"]:checked'))
+          .map(cb => cb.value);
+
+        let body = `### Cross-Team Access Request\n\n`;
+        body += `**Repository:** \`${repoName}\`\n\n`;
+        body += `| Field | Value |\n|---|---|\n`;
+        body += `| Source Product | ${product} |\n`;
+        body += `| Permission | ${permission} |\n`;
+        body += `| Teams | ${teams.join(', ')} |\n\n`;
+        body += `### Reason\n${reason}`;
+
+        const title = `[Cross-Team Access]: ${repoName} ← ${product}`;
+
+        submitIssue(title, body);
+      });
+
+      // === Common submit logic ===
+      function submitIssue(title, body) {
+        const params = new URLSearchParams({
+          title: title,
+          body: body,
+          labels: MANAGE_LABELS.join(',')
+        });
+        const issueUrl = `https://github.com/${ISSUE_REPO}/issues/new?${params.toString()}`;
+
+        $('resultText').textContent = body;
+        $('issueLink').href = issueUrl;
+        $('result').classList.add('show');
+        $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        window.open(issueUrl, '_blank');
+      }
+
+      // === Copy & Reset ===
+      $('copyBtn').addEventListener('click', function () {
+        navigator.clipboard.writeText($('resultText').textContent).then(() => {
+          const original = this.textContent;
+          this.textContent = '✓ Copied!';
+          setTimeout(() => { this.textContent = original; }, 1500);
+        });
+      });
+
+      $('resetBtn').addEventListener('click', function () {
+        $('updateForm').reset();
+        $('crossTeamForm').reset();
+        $('ctTeams').innerHTML = '<p style="color:#6e7781; font-size:13px; font-style:italic;">Select a product above to see available teams</p>';
+        $('result').classList.remove('show');
+        validateUpdate();
+        validateCrossTeam();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+name: Manage Repository
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  parse-request:
+    if: contains(github.event.issue.labels.*.name, 'repo-manage')
+    runs-on: ubuntu-latest
+    outputs:
+      request_type: ${{ steps.parse.outputs.request_type }}
+      repo_name: ${{ steps.parse.outputs.repo_name }}
+      new_name: ${{ steps.parse.outputs.new_name }}
+      description: ${{ steps.parse.outputs.description }}
+      visibility: ${{ steps.parse.outputs.visibility }}
+      product: ${{ steps.parse.outputs.product }}
+      tribe: ${{ steps.parse.outputs.tribe }}
+      ban_id: ${{ steps.parse.outputs.ban_id }}
+      cross_teams: ${{ steps.parse.outputs.cross_teams }}
+      cross_permission: ${{ steps.parse.outputs.cross_permission }}
+
+    steps:
+      - name: Parse issue body
+        id: parse
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          python3 << 'EOF'
+          import os
+          import re
+
+          body = os.environ.get('ISSUE_BODY', '')
+
+          # Determine request type
+          if '### Repository Update Request' in body:
+              request_type = 'update'
+          elif '### Cross-Team Access Request' in body:
+              request_type = 'cross-team'
+          else:
+              request_type = 'unknown'
+
+          # Extract repo name from: **Repository:** `name`
+          repo_match = re.search(r'\*\*Repository:\*\*\s*`([^`]+)`', body)
+          repo_name = repo_match.group(1) if repo_match else ''
+
+          # Extract table fields
+          def extract_field(field_name):
+              escaped = re.escape(field_name)
+              pattern = rf'\|\s*{escaped}\s*\|\s*`?([^`|\n]+)`?\s*\|?'
+              match = re.search(pattern, body)
+              return match.group(1).strip() if match else ''
+
+          new_name = extract_field('New Name')
+          description = extract_field('Description')
+          visibility = extract_field('Visibility')
+          product = extract_field('Product') or extract_field('Source Product')
+          tribe = extract_field('Tribe')
+          ban_id = extract_field('BAN ID')
+          permission = extract_field('Permission')
+          teams = extract_field('Teams')
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'request_type={request_type}\n')
+              f.write(f'repo_name={repo_name}\n')
+              f.write(f'new_name={new_name}\n')
+              f.write(f'description={description}\n')
+              f.write(f'visibility={visibility}\n')
+              f.write(f'product={product}\n')
+              f.write(f'tribe={tribe}\n')
+              f.write(f'ban_id={ban_id}\n')
+              f.write(f'cross_teams={teams}\n')
+              f.write(f'cross_permission={permission}\n')
+
+          print(f'Request Type: {request_type}')
+          print(f'Repository: {repo_name}')
+          print(f'New Name: {new_name}')
+          print(f'Description: {description}')
+          print(f'Visibility: {visibility}')
+          print(f'Product: {product}')
+          print(f'Tribe: {tribe}')
+          print(f'BAN ID: {ban_id}')
+          print(f'Teams: {teams}')
+          print(f'Permission: {permission}')
+          EOF
+
+      - name: Validate
+        run: |
+          if [ -z "${{ steps.parse.outputs.repo_name }}" ]; then
+            echo "::error::Repository name is required"
+            exit 1
+          fi
+          if [ "${{ steps.parse.outputs.request_type }}" = "unknown" ]; then
+            echo "::error::Could not determine request type"
+            exit 1
+          fi
+
+  update-repo:
+    needs: parse-request
+    if: needs.parse-request.outputs.request_type == 'update'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update repository metadata
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+          ORG: jfrog-oidc-test
+          REPO_NAME: ${{ needs.parse-request.outputs.repo_name }}
+          NEW_NAME: ${{ needs.parse-request.outputs.new_name }}
+          DESCRIPTION: ${{ needs.parse-request.outputs.description }}
+          VISIBILITY: ${{ needs.parse-request.outputs.visibility }}
+          PRODUCT: ${{ needs.parse-request.outputs.product }}
+          TRIBE: ${{ needs.parse-request.outputs.tribe }}
+          BAN_ID: ${{ needs.parse-request.outputs.ban_id }}
+        run: |
+          pip install requests > /dev/null 2>&1
+          python3 << 'EOF'
+          import os
+          import requests
+          import sys
+
+          token = os.environ['GH_TOKEN']
+          org = os.environ['ORG']
+          repo_name = os.environ['REPO_NAME']
+          new_name = os.environ.get('NEW_NAME', '').strip()
+          description = os.environ.get('DESCRIPTION', '').strip()
+          visibility = os.environ.get('VISIBILITY', '').strip()
+          product = os.environ.get('PRODUCT', '').strip()
+          tribe = os.environ.get('TRIBE', '').strip()
+          ban_id = os.environ.get('BAN_ID', '').strip()
+
+          headers = {
+              'Authorization': f'token {token}',
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28'
+          }
+
+          # Check repo exists
+          r = requests.get(
+              f'https://api.github.com/repos/{org}/{repo_name}',
+              headers=headers
+          )
+          if r.status_code != 200:
+              print(f'::error::Repository {org}/{repo_name} not found: {r.status_code}')
+              sys.exit(1)
+
+          print(f'Found repository: {org}/{repo_name}')
+
+          # Build update payload (only include fields that have values)
+          update_payload = {}
+          if new_name:
+              update_payload['name'] = new_name
+          if description:
+              update_payload['description'] = description
+          if visibility:
+              update_payload['visibility'] = visibility
+
+          # Apply repo updates if any
+          if update_payload:
+              print(f'Updating repo with: {update_payload}')
+              r = requests.patch(
+                  f'https://api.github.com/repos/{org}/{repo_name}',
+                  headers=headers,
+                  json=update_payload
+              )
+              if r.status_code == 200:
+                  print(f'✓ Repository updated successfully')
+                  if new_name:
+                      print(f'  Renamed: {repo_name} → {new_name}')
+                      repo_name = new_name  # Use new name for subsequent operations
+                  if description:
+                      print(f'  Description updated')
+                  if visibility:
+                      print(f'  Visibility changed to: {visibility}')
+              else:
+                  print(f'::error::Failed to update repo: {r.status_code} {r.text}')
+                  sys.exit(1)
+
+          # Update custom properties if any changed
+          properties = []
+          if product:
+              properties.append({'property_name': 'product', 'value': product})
+          if tribe:
+              properties.append({'property_name': 'tribe', 'value': tribe})
+          if ban_id:
+              properties.append({'property_name': 'ban', 'value': ban_id})
+
+          if properties:
+              r = requests.patch(
+                  f'https://api.github.com/orgs/{org}/properties/values',
+                  headers=headers,
+                  json={
+                      'repository_names': [repo_name],
+                      'properties': properties
+                  }
+              )
+              if r.status_code in (200, 204):
+                  print(f'✓ Custom properties updated')
+                  for p in properties:
+                      print(f'  {p["property_name"]} = {p["value"]}')
+              else:
+                  print(f'::error::Failed to update custom properties: {r.status_code} {r.text}')
+                  sys.exit(1)
+
+          print('\nRepository update complete.')
+          EOF
+
+      - name: Comment on issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment $ISSUE_NUMBER --body "✅ Repository update has been applied successfully." --repo ${{ github.repository }}
+          gh issue close $ISSUE_NUMBER --repo ${{ github.repository }}
+
+  cross-team-access:
+    needs: parse-request
+    if: needs.parse-request.outputs.request_type == 'cross-team'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Grant cross-team access
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+          ORG: jfrog-oidc-test
+          REPO_NAME: ${{ needs.parse-request.outputs.repo_name }}
+          TEAMS: ${{ needs.parse-request.outputs.cross_teams }}
+          PERMISSION: ${{ needs.parse-request.outputs.cross_permission }}
+        run: |
+          pip install requests pyyaml > /dev/null 2>&1
+          python3 << 'EOF'
+          import os
+          import requests
+          import sys
+
+          token = os.environ['GH_TOKEN']
+          org = os.environ['ORG']
+          repo_name = os.environ['REPO_NAME']
+          teams_str = os.environ.get('TEAMS', '').strip()
+          permission = os.environ.get('PERMISSION', 'pull').strip()
+
+          headers = {
+              'Authorization': f'token {token}',
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28'
+          }
+
+          # Check repo exists
+          r = requests.get(
+              f'https://api.github.com/repos/{org}/{repo_name}',
+              headers=headers
+          )
+          if r.status_code != 200:
+              print(f'::error::Repository {org}/{repo_name} not found: {r.status_code}')
+              sys.exit(1)
+
+          print(f'Repository: {org}/{repo_name}')
+          print(f'Permission: {permission}')
+
+          # Parse team names (comma-separated)
+          team_names = [t.strip() for t in teams_str.split(',') if t.strip()]
+
+          if not team_names:
+              print('::error::No teams specified')
+              sys.exit(1)
+
+          print(f'Teams to grant access: {", ".join(team_names)}')
+          print()
+
+          success_count = 0
+          for team_name in team_names:
+              slug = team_name.lower().replace(' ', '-')
+
+              r = requests.put(
+                  f'https://api.github.com/orgs/{org}/teams/{slug}/repos/{org}/{repo_name}',
+                  headers=headers,
+                  json={'permission': permission}
+              )
+              if r.status_code in (200, 204):
+                  print(f'  ✓ {team_name} → {permission}')
+                  success_count += 1
+              else:
+                  print(f'  ::error::Failed to assign {team_name}: {r.status_code} {r.text}')
+
+          print(f'\nCross-team access complete. {success_count}/{len(team_names)} teams granted access.')
+
+          if success_count < len(team_names):
+              sys.exit(1)
+          EOF
+
+      - name: Comment on issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment $ISSUE_NUMBER --body "✅ Cross-team access has been granted successfully." --repo ${{ github.repository }}
+          gh issue close $ISSUE_NUMBER --repo ${{ github.repository }}

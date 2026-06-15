@@ -16,6 +16,7 @@ window.APP_CONFIG = {
   // --- Where the GitHub issue gets created ---
   ISSUE_REPO: 'jfrog-oidc-test/issue-test',   // owner/repo
   ISSUE_LABELS: ['repo-creation'],         // labels to apply (must exist in that repo)
+  MANAGE_LABELS: ['repo-manage'],          // labels for repo update/cross-team access requests
 
   // --- Repository prefixes ---
   // `value` becomes the repo prefix (svc-myapp). `label` is what users see.

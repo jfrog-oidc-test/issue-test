@@ -100,7 +100,7 @@ jobs:
     if: needs.parse-request.outputs.request_type == 'update'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       issues: write
     steps:
       - name: Checkout
@@ -313,6 +313,77 @@ jobs:
           print('\nRepository update complete.')
           EOF
 
+      - name: Update repo registry
+        env:
+          REPO_NAME: ${{ needs.parse-request.outputs.repo_name }}
+          NEW_NAME: ${{ needs.parse-request.outputs.new_name }}
+          PRODUCT: ${{ needs.parse-request.outputs.product }}
+        run: |
+          python3 << 'EOF'
+          import os
+          import yaml
+
+          repo_name = os.environ['REPO_NAME']
+          new_name = os.environ.get('NEW_NAME', '').strip()
+          product = os.environ.get('PRODUCT', '').strip()
+
+          registry_file = 'repos-registry.yml'
+
+          # Load existing registry
+          if os.path.exists(registry_file):
+              with open(registry_file) as f:
+                  registry = yaml.safe_load(f) or {}
+          else:
+              registry = {}
+
+          repos = registry.get('repositories', [])
+
+          # Find repo entry
+          repo_entry = None
+          for r in repos:
+              if r.get('name') == repo_name:
+                  repo_entry = r
+                  break
+
+          if repo_entry is None:
+              repo_entry = {'name': repo_name, 'teams': [], 'cross_team_access': []}
+              repos.append(repo_entry)
+
+          # Update name if renamed
+          if new_name:
+              repo_entry['name'] = new_name
+
+          # Update teams if product changed
+          if product:
+              with open('teams-config.yml') as f:
+                  config = yaml.safe_load(f)
+              teams = []
+              for entry in config.get('teams', []):
+                  if entry.get('product') == product:
+                      for team in entry.get('teams', []):
+                          teams.append(team['name'])
+                      break
+              repo_entry['teams'] = teams
+
+          registry['repositories'] = repos
+
+          with open(registry_file, 'w') as f:
+              f.write('# Repository Registry — Source of Truth\n')
+              f.write('# Auto-updated by GitHub Actions on repo creation, update, and cross-team access grants.\n\n')
+              yaml.dump(registry, f, default_flow_style=False, sort_keys=False)
+
+          print(f'✓ Registry updated for repo: {new_name or repo_name}')
+          EOF
+
+      - name: Commit registry changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add repos-registry.yml
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "registry: update ${{ needs.parse-request.outputs.repo_name }}"
+          git push
+
       - name: Comment on issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -326,7 +397,7 @@ jobs:
     if: needs.parse-request.outputs.request_type == 'cross-team'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       issues: write
     steps:
       - name: Checkout
@@ -400,6 +471,71 @@ jobs:
           if success_count < len(team_names):
               sys.exit(1)
           EOF
+
+      - name: Update repo registry with cross-team access
+        env:
+          REPO_NAME: ${{ needs.parse-request.outputs.repo_name }}
+          TEAMS: ${{ needs.parse-request.outputs.cross_teams }}
+        run: |
+          pip install pyyaml > /dev/null 2>&1
+          python3 << 'EOF'
+          import os
+          import yaml
+
+          repo_name = os.environ['REPO_NAME']
+          teams_str = os.environ.get('TEAMS', '').strip()
+
+          registry_file = 'repos-registry.yml'
+
+          # Load existing registry
+          if os.path.exists(registry_file):
+              with open(registry_file) as f:
+                  registry = yaml.safe_load(f) or {}
+          else:
+              registry = {}
+
+          repos = registry.get('repositories', [])
+
+          # Find repo entry
+          repo_entry = None
+          for r in repos:
+              if r.get('name') == repo_name:
+                  repo_entry = r
+                  break
+
+          if repo_entry is None:
+              repo_entry = {'name': repo_name, 'teams': [], 'cross_team_access': []}
+              repos.append(repo_entry)
+
+          # Parse team names
+          team_names = [t.strip() for t in teams_str.split(',') if t.strip()]
+
+          # Add cross-team entries (avoid duplicates)
+          cross_access = repo_entry.get('cross_team_access', [])
+
+          for team_name in team_names:
+              if team_name not in cross_access:
+                  cross_access.append(team_name)
+
+          repo_entry['cross_team_access'] = cross_access
+          registry['repositories'] = repos
+
+          with open(registry_file, 'w') as f:
+              f.write('# Repository Registry — Source of Truth\n')
+              f.write('# Auto-updated by GitHub Actions on repo creation, update, and cross-team access grants.\n\n')
+              yaml.dump(registry, f, default_flow_style=False, sort_keys=False)
+
+          print(f'✓ Registry updated with cross-team access for: {repo_name}')
+          EOF
+
+      - name: Commit registry changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add repos-registry.yml
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "registry: cross-team access for ${{ needs.parse-request.outputs.repo_name }}"
+          git push
 
       - name: Comment on issue
         env:

@@ -43,4 +43,5 @@ repositories:
 - name: api-mykone
   teams:
   - API-Ecosystem-Admin
-  cross_team_access: []
+  cross_team_access:
+  - Embeded-pipeline-Developer

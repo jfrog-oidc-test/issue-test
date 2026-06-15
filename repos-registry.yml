@@ -7,29 +7,33 @@ repositories:
   - Descreat-Projects-Admin
   - Descreat-Projects-Developer
   - Descreat-Projects-Maintainer
+  - Descreat-Projects-Reader
   cross_team_access:
   - SW-Digital-Platform-Admin
 - name: swcd-test11234
   teams:
   - SW-Digital-Platform-Admin
-  - SW-Digital-Platform-Developer
   - SW-Digital-Platform-Maintainer
+  - SW-Digital-Platform-Reader
   cross_team_access: []
 - name: gg-data1
   teams:
   - Descreat-Projects-Admin
   - Descreat-Projects-Developer
   - Descreat-Projects-Maintainer
+  - Descreat-Projects-Reader
   cross_team_access: []
 - name: lmdx-data3
   teams:
   - Descreat-Projects-Admin
   - Descreat-Projects-Developer
   - Descreat-Projects-Maintainer
+  - Descreat-Projects-Reader
   cross_team_access: []
 - name: erd-data2
   teams:
   - Descreat-Projects-Admin
   - Descreat-Projects-Developer
   - Descreat-Projects-Maintainer
+  - Descreat-Projects-Reader
   cross_team_access: []

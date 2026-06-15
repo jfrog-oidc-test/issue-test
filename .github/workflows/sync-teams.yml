@@ -168,14 +168,20 @@ jobs:
               for team in product.get('teams', []):
                   config_teams.add(team['name'])
 
+          # Build set of all known prefixes from products in config
+          # to identify teams that belong to our managed products
+          product_prefixes = set()
+          for product in config.get('teams', []):
+              prod_name = product.get('product', '')
+              if prod_name:
+                  product_prefixes.add(prod_name)
+
           # Load registry to find teams that were previously assigned
           registry_file = 'repos-registry.yml'
-          if not os.path.exists(registry_file):
-              print('No registry file, skipping removal check.')
-              exit(0)
-
-          with open(registry_file) as f:
-              registry = yaml.safe_load(f) or {}
+          registry = {}
+          if os.path.exists(registry_file):
+              with open(registry_file) as f:
+                  registry = yaml.safe_load(f) or {}
 
           repos = registry.get('repositories', [])
 
@@ -186,11 +192,36 @@ jobs:
                   if team_name not in config_teams:
                       removed_teams.add(team_name)
 
+          # Also check GitHub org teams that match our product naming pattern
+          # but are no longer in config (catches teams never assigned to repos)
+          page = 1
+          while True:
+              r = requests.get(
+                  f'https://api.github.com/orgs/{org}/teams',
+                  headers=headers,
+                  params={'per_page': 100, 'page': page}
+              )
+              if r.status_code != 200:
+                  print(f'::warning::Could not list org teams: {r.status_code}')
+                  break
+              teams_page = r.json()
+              if not teams_page:
+                  break
+              for team in teams_page:
+                  team_name = team['name']
+                  # Check if this team belongs to one of our managed products
+                  for prod_name in product_prefixes:
+                      if team_name.startswith(prod_name + '-'):
+                          if team_name not in config_teams:
+                              removed_teams.add(team_name)
+                          break
+              page += 1
+
           if not removed_teams:
               print('No teams removed from config.')
               exit(0)
 
-          print(f'Teams removed from config: {", ".join(removed_teams)}')
+          print(f'Teams removed from config: {", ".join(sorted(removed_teams))}')
 
           # Remove access from repos and delete teams
           for team_name in removed_teams:

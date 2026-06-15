@@ -384,12 +384,51 @@ jobs:
           git commit -m "registry: update ${{ needs.parse-request.outputs.repo_name }} [skip ci]"
           git push
 
-      - name: Comment on issue
+      - name: Comment summary and close issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO_NAME: ${{ needs.parse-request.outputs.repo_name }}
+          NEW_NAME: ${{ needs.parse-request.outputs.new_name }}
+          DESCRIPTION: ${{ needs.parse-request.outputs.description }}
+          VISIBILITY: ${{ needs.parse-request.outputs.visibility }}
+          PRODUCT: ${{ needs.parse-request.outputs.product }}
+          TRIBE: ${{ needs.parse-request.outputs.tribe }}
+          BAN_ID: ${{ needs.parse-request.outputs.ban_id }}
         run: |
-          gh issue comment $ISSUE_NUMBER --body "✅ Repository update has been applied successfully." --repo ${{ github.repository }}
+          BODY="## ✅ Repository Update Applied Successfully
+
+          | Step | Status |
+          |------|--------|
+          | Metadata updated | ✓ Done |
+          | Custom properties updated | ✓ Done |
+          | Team ownership reassigned | ✓ Done |
+          | Registry updated | ✓ Done |
+
+          ### Changes Applied
+          | Field | Value |
+          |-------|-------|
+          | Repository | \`${REPO_NAME}\` |"
+
+          [ -n "$NEW_NAME" ] && BODY="${BODY}
+          | Renamed to | \`${NEW_NAME}\` |"
+          [ -n "$DESCRIPTION" ] && BODY="${BODY}
+          | Description | ${DESCRIPTION} |"
+          [ -n "$VISIBILITY" ] && BODY="${BODY}
+          | Visibility | ${VISIBILITY} |"
+          [ -n "$PRODUCT" ] && BODY="${BODY}
+          | Product | ${PRODUCT} |"
+          [ -n "$TRIBE" ] && BODY="${BODY}
+          | Tribe | ${TRIBE} |"
+          [ -n "$BAN_ID" ] && BODY="${BODY}
+          | BAN ID | ${BAN_ID} |"
+
+          BODY="${BODY}
+
+          ---
+          🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+          gh issue comment $ISSUE_NUMBER --body "$BODY" --repo ${{ github.repository }}
           gh issue close $ISSUE_NUMBER --repo ${{ github.repository }}
 
   cross-team-access:
@@ -537,10 +576,30 @@ jobs:
           git commit -m "registry: cross-team access for ${{ needs.parse-request.outputs.repo_name }} [skip ci]"
           git push
 
-      - name: Comment on issue
+      - name: Comment summary and close issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO_NAME: ${{ needs.parse-request.outputs.repo_name }}
+          TEAMS: ${{ needs.parse-request.outputs.cross_teams }}
+          PERMISSION: ${{ needs.parse-request.outputs.cross_permission }}
         run: |
-          gh issue comment $ISSUE_NUMBER --body "✅ Cross-team access has been granted successfully." --repo ${{ github.repository }}
+          BODY="## ✅ Cross-Team Access Granted Successfully
+
+          | Step | Status |
+          |------|--------|
+          | Team access granted | ✓ Done |
+          | Registry updated | ✓ Done |
+
+          ### Access Details
+          | Field | Value |
+          |-------|-------|
+          | Repository | \`${REPO_NAME}\` |
+          | Teams granted | ${TEAMS} |
+          | Permission | ${PERMISSION} |
+
+          ---
+          🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+          gh issue comment $ISSUE_NUMBER --body "$BODY" --repo ${{ github.repository }}
           gh issue close $ISSUE_NUMBER --repo ${{ github.repository }}

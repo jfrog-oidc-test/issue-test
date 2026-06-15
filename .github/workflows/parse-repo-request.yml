@@ -285,6 +285,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -357,3 +358,41 @@ jobs:
           git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "registry: add ${{ needs.parse-issue.outputs.full_name }} [skip ci]"
           git push
+
+      - name: Comment summary and close issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO_NAME: ${{ needs.parse-issue.outputs.full_name }}
+          PRODUCT: ${{ needs.parse-issue.outputs.product }}
+          TRIBE: ${{ needs.parse-issue.outputs.tribe }}
+          BAN_ID: ${{ needs.parse-issue.outputs.ban_id }}
+          VISIBILITY: ${{ needs.parse-issue.outputs.visibility }}
+        run: |
+          BODY=$(cat <<'COMMENT'
+          ## ✅ Repository Created Successfully
+
+          | Step | Status |
+          |------|--------|
+          | Repository creation | ✓ Done |
+          | Custom properties set | ✓ Done |
+          | Team access assigned | ✓ Done |
+          | Registry updated | ✓ Done |
+
+          ### Summary
+          | Field | Value |
+          |-------|-------|
+          COMMENT
+          )
+          BODY="${BODY}
+          | Repository | \`${REPO_NAME}\` |
+          | Product | ${PRODUCT} |
+          | Tribe | ${TRIBE} |
+          | BAN ID | ${BAN_ID} |
+          | Visibility | ${VISIBILITY} |
+
+          ---
+          🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+          gh issue comment $ISSUE_NUMBER --body "$BODY" --repo ${{ github.repository }}
+          gh issue close $ISSUE_NUMBER --repo ${{ github.repository }}

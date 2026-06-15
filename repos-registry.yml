@@ -5,9 +5,7 @@ repositories:
 - name: erd-my11
   teams:
   - Descreat-Projects-Admin
-  - Descreat-Projects-Developer
   - Descreat-Projects-Maintainer
-  - Descreat-Projects-Reader
   cross_team_access:
   - SW-Digital-Platform-Admin
 - name: swcd-test11234
@@ -18,16 +16,12 @@ repositories:
 - name: gg-data34
   teams:
   - Descreat-Projects-Admin
-  - Descreat-Projects-Reader
-  - Descreat-Projects-Developer
   - Descreat-Projects-Maintainer
   cross_team_access: []
 - name: lmdx-data3
   teams:
   - Descreat-Projects-Admin
-  - Descreat-Projects-Developer
   - Descreat-Projects-Maintainer
-  - Descreat-Projects-Reader
   cross_team_access: []
 - name: swcd-data2
   teams:
@@ -45,5 +39,3 @@ repositories:
   - API-Ecosystem-Admin
   cross_team_access:
   - Embeded-pipeline-Developer
-  - Descreat-Projects-Reader
-  - Descreat-Projects-Developer

@@ -134,6 +134,30 @@
       font-size: 13px; color: #0969da; margin-bottom: 1rem;
     }
 
+    /* Preview card */
+    .preview-card {
+      background: linear-gradient(135deg, #f0f6ff 0%, #f0fbf7 100%);
+      border: 1px solid #d0d7de;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+    .preview-card.show { display: block; }
+    .preview-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: #57606a; margin-bottom: 8px;
+    }
+    .preview-name {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 20px; font-weight: 500;
+      word-break: break-all; min-height: 24px;
+    }
+    .preview-name .prefix { color: #0969da; }
+    .preview-name .sep { color: #6e7781; }
+    .preview-name .name { color: #1a7f37; }
+    .preview-name .empty { color: #8c959f; font-style: italic; font-size: 15px; font-family: inherit; }
+
     footer {
       margin-top: 1.5rem; padding-top: 1.25rem;
       border-top: 1px solid #d0d7de; text-align: center;
@@ -170,10 +194,35 @@
         </div>
 
         <div class="field">
-          <label for="upNewName">New repository name</label>
-          <div class="hint">Leave blank to keep current name. Lowercase, hyphens only.</div>
-          <input id="upNewName" type="text" placeholder="new-repo-name" />
+          <label for="upProduct">Change product</label>
+          <select id="upProduct">
+            <option value="">— no change —</option>
+          </select>
         </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="upPrefix">New prefix</label>
+            <div class="hint">Based on selected product</div>
+            <select id="upPrefix">
+              <option value="">— no change —</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="upNewName">New repository name</label>
+            <div class="hint">Lowercase, hyphens only. Leave blank to keep current.</div>
+            <input id="upNewName" type="text" placeholder="new-repo-name" />
+          </div>
+        </div>
+
+        <!-- Live preview -->
+        <section class="preview-card" id="upPreviewCard">
+          <div class="preview-label">Your repository will be modified as</div>
+          <div class="preview-name" id="upPreview">
+            <span class="empty">Select prefix and enter name...</span>
+          </div>
+        </section>
 
         <div class="field">
           <label for="upDescription">New description</label>
@@ -183,35 +232,26 @@
 
         <div class="row">
           <div class="field">
-            <label for="upProduct">Change product</label>
-            <select id="upProduct">
-              <option value="">— no change —</option>
-            </select>
-          </div>
-
-          <div class="field">
             <label for="upVisibility">Change visibility</label>
             <select id="upVisibility">
               <option value="">— no change —</option>
             </select>
           </div>
-        </div>
 
-        <div class="row">
           <div class="field">
             <label for="upTribe">Change tribe</label>
             <select id="upTribe">
               <option value="">— no change —</option>
             </select>
           </div>
+        </div>
 
-          <div class="field">
-            <label for="upBan">Change BAN ID</label>
-            <select id="upBan">
-              <option value="">— no change —</option>
-            </select>
-            <input id="upBanManual" type="text" placeholder="Enter BAN ID manually" style="display:none; margin-top:6px;" />
-          </div>
+        <div class="field">
+          <label for="upBan">Change BAN ID</label>
+          <select id="upBan">
+            <option value="">— no change —</option>
+          </select>
+          <input id="upBanManual" type="text" placeholder="Enter BAN ID manually" style="display:none; margin-top:6px;" />
         </div>
 
         <button type="submit" class="submit" id="updateSubmit" disabled>
@@ -377,10 +417,14 @@
       // Tribes (populated dynamically based on product selection)
       // BAN IDs (populated dynamically based on product selection)
 
-      // === Product cascade: filter tribe & BAN based on selected product ===
+      // === Product cascade: filter prefix, tribe & BAN based on selected product ===
       function applyProductCascade() {
         const product = $('upProduct').value;
         const mapping = PRODUCT_MAP[product];
+
+        // Reset prefix dropdown
+        const prefixSelect = $('upPrefix');
+        prefixSelect.innerHTML = '<option value="">— no change —</option>';
 
         // Reset tribe dropdown
         const tribeSelect = $('upTribe');
@@ -391,14 +435,37 @@
         banSelect.innerHTML = '<option value="">— no change —</option>';
 
         if (!product || !mapping) {
-          // No product selected → show all tribes and no BAN options
+          // No product selected → show all tribes/prefixes, no BAN
           (CFG.TRIBES || []).forEach(t => {
             const opt = document.createElement('option');
             opt.value = t;
             opt.textContent = t;
             tribeSelect.appendChild(opt);
           });
+          (CFG.PREFIXES || []).forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.value;
+            opt.textContent = p.label;
+            prefixSelect.appendChild(opt);
+          });
+          renderPreview();
           return;
+        }
+
+        // Filter prefixes for this product
+        const allowedPrefixes = mapping.prefixes === 'all'
+          ? (CFG.PREFIXES || [])
+          : (CFG.PREFIXES || []).filter(p => (mapping.prefixes || []).includes(p.value));
+        allowedPrefixes.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.value;
+          opt.textContent = p.label;
+          prefixSelect.appendChild(opt);
+        });
+
+        // Auto-select if only one prefix
+        if (allowedPrefixes.length === 1) {
+          prefixSelect.value = allowedPrefixes[0].value;
         }
 
         // Filter tribes
@@ -425,6 +492,7 @@
         banSelect.appendChild(otherOpt);
 
         toggleBanManual();
+        renderPreview();
       }
 
       function toggleBanManual() {
@@ -433,6 +501,38 @@
         if (!isOther) $('upBanManual').value = '';
       }
 
+      // === Live preview for rename ===
+      function renderPreview() {
+        const prefix = $('upPrefix').value;
+        const rawName = $('upNewName').value.trim();
+        const cleanName = rawName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        const card = $('upPreviewCard');
+        const preview = $('upPreview');
+
+        if (prefix && cleanName) {
+          preview.innerHTML = `<span class="prefix">${prefix}</span><span class="sep">-</span><span class="name">${cleanName}</span>`;
+          card.classList.add('show');
+        } else if (prefix) {
+          preview.innerHTML = `<span class="prefix">${prefix}</span><span class="sep">-</span><span class="empty">enter name</span>`;
+          card.classList.add('show');
+        } else if (cleanName) {
+          preview.innerHTML = `<span class="empty">select prefix</span><span class="sep">-</span><span class="name">${cleanName}</span>`;
+          card.classList.add('show');
+        } else {
+          card.classList.remove('show');
+        }
+      }
+
+      $('upPrefix').addEventListener('change', function () {
+        renderPreview();
+        validateUpdate();
+      });
+
+      $('upNewName').addEventListener('input', function () {
+        renderPreview();
+        validateUpdate();
+      });
+
       $('upBan').addEventListener('change', function () {
         toggleBanManual();
         validateUpdate();
@@ -440,7 +540,7 @@
 
       $('upBanManual').addEventListener('input', validateUpdate);
 
-      // Initial population (all tribes, no BAN)
+      // Initial population (all tribes/prefixes, no BAN)
       applyProductCascade();
 
       $('upProduct').addEventListener('change', function () {
@@ -457,7 +557,8 @@
 
       function validateUpdate() {
         const repoName = $('upRepoName').value.trim();
-        const hasChange = $('upNewName').value.trim() ||
+        const hasChange = $('upPrefix').value ||
+                          $('upNewName').value.trim() ||
                           $('upDescription').value.trim() ||
                           $('upVisibility').value ||
                           $('upProduct').value ||
@@ -466,7 +567,7 @@
         $('updateSubmit').disabled = !(repoName && hasChange);
       }
 
-      ['upRepoName','upNewName','upDescription','upVisibility','upProduct','upTribe','upBan'].forEach(id => {
+      ['upRepoName','upDescription','upVisibility','upProduct','upTribe','upBan'].forEach(id => {
         $(id).addEventListener('input', validateUpdate);
         $(id).addEventListener('change', validateUpdate);
       });
@@ -524,26 +625,40 @@
         e.preventDefault();
 
         const repoName = $('upRepoName').value.trim();
-        const newName = $('upNewName').value.trim();
+        const prefix = $('upPrefix').value;
+        const rawNewName = $('upNewName').value.trim();
         const description = $('upDescription').value.trim();
         const visibility = $('upVisibility').value;
         const product = $('upProduct').value;
         const tribe = $('upTribe').value;
         const ban = getBanValue();
 
+        // Construct full new name from prefix + name
+        let fullNewName = '';
+        if (prefix && rawNewName) {
+          fullNewName = `${prefix}-${rawNewName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}`;
+        } else if (prefix) {
+          // Prefix changed but name unchanged — use prefix + old name minus old prefix
+          const parts = repoName.split('-');
+          parts.shift();
+          fullNewName = `${prefix}-${parts.join('-')}`;
+        } else if (rawNewName) {
+          fullNewName = rawNewName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        }
+
         let body = `### Repository Update Request\n\n`;
         body += `**Repository:** \`${repoName}\`\n\n`;
         body += `| Field | New Value |\n|---|---|\n`;
 
-        if (newName) body += `| New Name | \`${newName}\` |\n`;
+        if (fullNewName) body += `| New Name | \`${fullNewName}\` |\n`;
         if (description) body += `| Description | ${description} |\n`;
         if (visibility) body += `| Visibility | ${visibility} |\n`;
         if (product) body += `| Product | ${product} |\n`;
         if (tribe) body += `| Tribe | ${tribe} |\n`;
         if (ban) body += `| BAN ID | ${ban} |\n`;
 
-        const title = newName
-          ? `[Repo Update]: ${repoName} → ${newName}`
+        const title = fullNewName
+          ? `[Repo Update]: ${repoName} → ${fullNewName}`
           : `[Repo Update]: ${repoName}`;
 
         submitIssue(title, body);

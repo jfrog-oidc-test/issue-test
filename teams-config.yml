@@ -52,10 +52,6 @@ teams:
         ad_group_name: GRP-Azure-EmbededPipeline-Dev
         ad_object_id: b8c9d0e1-f2a3-4567-bcde-678901234567
 
-      - name: Embeded-pipeline-Reader
-        ad_group_name: GRP-Azure-EmbededPipeline-Read
-        ad_object_id: c9d0e1f2-a3b4-5678-cdef-789012345678
-
       - name: Embeded-pipeline-Admin
         ad_group_name: GRP-Azure-EmbededPipeline-Admin
         ad_object_id: c9d0e1f2-a3b4-5678-cdef-789012345678

@@ -296,7 +296,8 @@
     </footer>
   </div>
 
-  <script src="config.js?v=2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js"></script>
+  <script src="config.js?v=3"></script>
   <script>
     (function () {
       'use strict';
@@ -313,6 +314,32 @@
       const MANAGE_LABELS = CFG.MANAGE_LABELS || ['repo-manage'];
       const PRODUCT_MAP = CFG.PRODUCT_MAP || {};
       const $ = (id) => document.getElementById(id);
+
+      // Teams loaded from teams-config.yml (product → team names)
+      let PRODUCT_TEAMS = {};
+
+      // Fetch and parse teams-config.yml from the same repo
+      async function loadTeamsConfig() {
+        try {
+          const resp = await fetch('teams-config.yml');
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const text = await resp.text();
+          const config = jsyaml.load(text);
+
+          for (const entry of (config.teams || [])) {
+            const product = entry.product;
+            PRODUCT_TEAMS[product] = (entry.teams || []).map(t => t.name);
+          }
+          console.log('Teams config loaded:', PRODUCT_TEAMS);
+        } catch (err) {
+          console.warn('Could not load teams-config.yml:', err);
+        }
+      }
+
+      // Initialize after loading teams
+      loadTeamsConfig().then(init);
+
+      function init() {
 
       // === Tab switching ===
       document.querySelectorAll('.tab').forEach(tab => {
@@ -381,11 +408,16 @@
           return;
         }
 
-        // Find teams for product from teams-config structure (we infer from PRODUCT_MAP names)
-        // We use convention: Product has teams named Product-Admin, Product-Developer, Product-Reader
-        const teamSuffixes = ['Admin', 'Developer', 'Reader'];
-        teamSuffixes.forEach(suffix => {
-          const teamName = `${product}-${suffix}`;
+        // Get actual teams from teams-config.yml (loaded at startup)
+        const productTeams = PRODUCT_TEAMS[product] || [];
+
+        if (productTeams.length === 0) {
+          container.innerHTML = '<p style="color:#9a6700; font-size:13px; font-style:italic;">No teams found for this product</p>';
+          validateCrossTeam();
+          return;
+        }
+
+        productTeams.forEach(teamName => {
           const label = document.createElement('label');
           label.innerHTML = `<input type="checkbox" name="ctTeamSelect" value="${teamName}" /> ${teamName}`;
           container.appendChild(label);
@@ -502,6 +534,7 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
 
+      } // end init()
     })();
   </script>
 </body>

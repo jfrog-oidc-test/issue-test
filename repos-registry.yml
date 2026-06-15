@@ -7,4 +7,5 @@ repositories:
   - Descreat-Projects-Admin
   - Descreat-Projects-Developer
   - Descreat-Projects-Reader
-  cross_team_access: []
+  cross_team_access:
+  - SW-Digital-Platform-Admin

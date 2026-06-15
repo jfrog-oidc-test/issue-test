@@ -15,3 +15,9 @@ repositories:
   - SW-Digital-Platform-Developer
   - SW-Digital-Platform-Maintainer
   cross_team_access: []
+- name: gg-data1
+  teams:
+  - Descreat-Projects-Admin
+  - Descreat-Projects-Developer
+  - Descreat-Projects-Maintainer
+  cross_team_access: []

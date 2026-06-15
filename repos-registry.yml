@@ -45,3 +45,5 @@ repositories:
   - API-Ecosystem-Admin
   cross_team_access:
   - Embeded-pipeline-Developer
+  - Descreat-Projects-Reader
+  - Descreat-Projects-Developer

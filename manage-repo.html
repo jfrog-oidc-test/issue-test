@@ -169,20 +169,10 @@
           <input id="upRepoName" type="text" placeholder="prefix-repo-name" required />
         </div>
 
-        <div class="row">
-          <div class="field">
-            <label for="upNewPrefix">New prefix</label>
-            <div class="hint">Leave blank to keep current prefix</div>
-            <select id="upNewPrefix">
-              <option value="">— no change —</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="upNewName">New repository name</label>
-            <div class="hint">Leave blank to keep current name. Lowercase, hyphens only.</div>
-            <input id="upNewName" type="text" placeholder="new-repo-name" />
-          </div>
+        <div class="field">
+          <label for="upNewName">New repository name</label>
+          <div class="hint">Leave blank to keep current name. Lowercase, hyphens only.</div>
+          <input id="upNewName" type="text" placeholder="new-repo-name" />
         </div>
 
         <div class="field">
@@ -381,14 +371,6 @@
         });
       });
 
-      // Prefixes (for new prefix dropdown)
-      (CFG.PREFIXES || []).forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.value;
-        opt.textContent = p.label;
-        $('upNewPrefix').appendChild(opt);
-      });
-
       // Tribes
       (CFG.TRIBES || []).forEach(t => {
         const opt = document.createElement('option');
@@ -400,8 +382,7 @@
       // === Update form validation ===
       function validateUpdate() {
         const repoName = $('upRepoName').value.trim();
-        const hasChange = $('upNewPrefix').value ||
-                          $('upNewName').value.trim() ||
+        const hasChange = $('upNewName').value.trim() ||
                           $('upDescription').value.trim() ||
                           $('upVisibility').value ||
                           $('upProduct').value ||
@@ -410,7 +391,7 @@
         $('updateSubmit').disabled = !(repoName && hasChange);
       }
 
-      ['upRepoName','upNewPrefix','upNewName','upDescription','upVisibility','upProduct','upTribe','upBan'].forEach(id => {
+      ['upRepoName','upNewName','upDescription','upVisibility','upProduct','upTribe','upBan'].forEach(id => {
         $(id).addEventListener('input', validateUpdate);
         $(id).addEventListener('change', validateUpdate);
       });
@@ -468,7 +449,6 @@
         e.preventDefault();
 
         const repoName = $('upRepoName').value.trim();
-        const newPrefix = $('upNewPrefix').value;
         const newName = $('upNewName').value.trim();
         const description = $('upDescription').value.trim();
         const visibility = $('upVisibility').value;
@@ -476,33 +456,19 @@
         const tribe = $('upTribe').value;
         const ban = $('upBan').value.trim();
 
-        // Build the full new name if prefix or name changed
-        let fullNewName = '';
-        if (newPrefix && newName) {
-          fullNewName = `${newPrefix}-${newName}`;
-        } else if (newPrefix) {
-          // Keep old name part, replace prefix
-          const parts = repoName.split('-');
-          parts[0] = newPrefix;
-          fullNewName = parts.join('-');
-        } else if (newName) {
-          fullNewName = newName;
-        }
-
         let body = `### Repository Update Request\n\n`;
         body += `**Repository:** \`${repoName}\`\n\n`;
         body += `| Field | New Value |\n|---|---|\n`;
 
-        if (newPrefix) body += `| New Prefix | \`${newPrefix}\` |\n`;
-        if (fullNewName) body += `| New Name | \`${fullNewName}\` |\n`;
+        if (newName) body += `| New Name | \`${newName}\` |\n`;
         if (description) body += `| Description | ${description} |\n`;
         if (visibility) body += `| Visibility | ${visibility} |\n`;
         if (product) body += `| Product | ${product} |\n`;
         if (tribe) body += `| Tribe | ${tribe} |\n`;
         if (ban) body += `| BAN ID | ${ban} |\n`;
 
-        const title = fullNewName
-          ? `[Repo Update]: ${repoName} → ${fullNewName}`
+        const title = newName
+          ? `[Repo Update]: ${repoName} → ${newName}`
           : `[Repo Update]: ${repoName}`;
 
         submitIssue(title, body);

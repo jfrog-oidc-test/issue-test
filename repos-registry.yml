@@ -40,12 +40,8 @@ repositories:
 - name: api-test11
   teams:
   - API-Ecosystem-Admin
-  - API-Ecosystem-Developer
   cross_team_access: []
 - name: api-mykone
   teams:
   - API-Ecosystem-Admin
-  - API-Ecosystem-Developer
-  cross_team_access:
-  - Embeded-pipeline-Reader
-  - Embeded-pipeline-Admin
+  cross_team_access: []

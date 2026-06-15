@@ -1,4 +1,4 @@
-# GitHub Teams Configuration
+# GitHub Teams Configuration 
 # Teams are synced with Azure AD groups for member management
 
 org: jfrog-oidc-test

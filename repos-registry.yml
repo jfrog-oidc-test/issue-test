@@ -21,3 +21,9 @@ repositories:
   - Descreat-Projects-Developer
   - Descreat-Projects-Maintainer
   cross_team_access: []
+- name: lmdx-data3
+  teams:
+  - Descreat-Projects-Admin
+  - Descreat-Projects-Developer
+  - Descreat-Projects-Maintainer
+  cross_team_access: []

@@ -6,15 +6,12 @@ repositories:
   teams:
   - Descreat-Projects-Admin
   - Descreat-Projects-Developer
-  - Descreat-Projects-Reader
   - Descreat-Projects-Maintainer
   cross_team_access:
   - SW-Digital-Platform-Admin
 - name: swcd-test11234
   teams:
   - SW-Digital-Platform-Admin
-  - SW-Digital-Platform-Reader
   - SW-Digital-Platform-Developer
-  - SW-Digital-Platform-Collaborator
   - SW-Digital-Platform-Maintainer
   cross_team_access: []

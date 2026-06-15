@@ -183,15 +183,15 @@
 
         <div class="row">
           <div class="field">
-            <label for="upVisibility">Change visibility</label>
-            <select id="upVisibility">
+            <label for="upProduct">Change product</label>
+            <select id="upProduct">
               <option value="">— no change —</option>
             </select>
           </div>
 
           <div class="field">
-            <label for="upProduct">Change product</label>
-            <select id="upProduct">
+            <label for="upVisibility">Change visibility</label>
+            <select id="upVisibility">
               <option value="">— no change —</option>
             </select>
           </div>
@@ -207,7 +207,9 @@
 
           <div class="field">
             <label for="upBan">Change BAN ID</label>
-            <input id="upBan" type="text" placeholder="BAN-XXXXX" />
+            <select id="upBan">
+              <option value="">— no change —</option>
+            </select>
           </div>
         </div>
 
@@ -371,12 +373,57 @@
         });
       });
 
-      // Tribes
-      (CFG.TRIBES || []).forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = t;
-        $('upTribe').appendChild(opt);
+      // Tribes (populated dynamically based on product selection)
+      // BAN IDs (populated dynamically based on product selection)
+
+      // === Product cascade: filter tribe & BAN based on selected product ===
+      function applyProductCascade() {
+        const product = $('upProduct').value;
+        const mapping = PRODUCT_MAP[product];
+
+        // Reset tribe dropdown
+        const tribeSelect = $('upTribe');
+        tribeSelect.innerHTML = '<option value="">— no change —</option>';
+
+        // Reset BAN dropdown
+        const banSelect = $('upBan');
+        banSelect.innerHTML = '<option value="">— no change —</option>';
+
+        if (!product || !mapping) {
+          // No product selected → show all tribes and no BAN options
+          (CFG.TRIBES || []).forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            tribeSelect.appendChild(opt);
+          });
+          return;
+        }
+
+        // Filter tribes
+        const allowedTribes = mapping.tribes === 'all' ? (CFG.TRIBES || []) : (mapping.tribes || []);
+        allowedTribes.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = t;
+          tribeSelect.appendChild(opt);
+        });
+
+        // Populate BAN IDs for this product
+        (mapping.bans || []).forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b;
+          opt.textContent = b;
+          banSelect.appendChild(opt);
+        });
+      }
+
+      // Initial population (all tribes, no BAN)
+      applyProductCascade();
+
+      $('upProduct').addEventListener('change', function () {
+        applyProductCascade();
+        validateUpdate();
       });
 
       // === Update form validation ===
@@ -387,7 +434,7 @@
                           $('upVisibility').value ||
                           $('upProduct').value ||
                           $('upTribe').value ||
-                          $('upBan').value.trim();
+                          $('upBan').value;
         $('updateSubmit').disabled = !(repoName && hasChange);
       }
 
@@ -454,7 +501,7 @@
         const visibility = $('upVisibility').value;
         const product = $('upProduct').value;
         const tribe = $('upTribe').value;
-        const ban = $('upBan').value.trim();
+        const ban = $('upBan').value;
 
         let body = `### Repository Update Request\n\n`;
         body += `**Repository:** \`${repoName}\`\n\n`;

@@ -99,6 +99,9 @@ jobs:
     needs: parse-request
     if: needs.parse-request.outputs.request_type == 'update'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -219,6 +222,9 @@ jobs:
     needs: parse-request
     if: needs.parse-request.outputs.request_type == 'cross-team'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4

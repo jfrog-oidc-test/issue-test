@@ -210,6 +210,7 @@
             <select id="upBan">
               <option value="">— no change —</option>
             </select>
+            <input id="upBanManual" type="text" placeholder="Enter BAN ID manually" style="display:none; margin-top:6px;" />
           </div>
         </div>
 
@@ -416,7 +417,28 @@
           opt.textContent = b;
           banSelect.appendChild(opt);
         });
+
+        // Add "Other (enter manually)" option
+        const otherOpt = document.createElement('option');
+        otherOpt.value = '__other__';
+        otherOpt.textContent = CFG.BAN_OTHER_LABEL || 'Other (enter manually)';
+        banSelect.appendChild(otherOpt);
+
+        toggleBanManual();
       }
+
+      function toggleBanManual() {
+        const isOther = $('upBan').value === '__other__';
+        $('upBanManual').style.display = isOther ? 'block' : 'none';
+        if (!isOther) $('upBanManual').value = '';
+      }
+
+      $('upBan').addEventListener('change', function () {
+        toggleBanManual();
+        validateUpdate();
+      });
+
+      $('upBanManual').addEventListener('input', validateUpdate);
 
       // Initial population (all tribes, no BAN)
       applyProductCascade();
@@ -427,6 +449,12 @@
       });
 
       // === Update form validation ===
+      function getBanValue() {
+        const sel = $('upBan').value;
+        if (sel === '__other__') return $('upBanManual').value.trim();
+        return sel;
+      }
+
       function validateUpdate() {
         const repoName = $('upRepoName').value.trim();
         const hasChange = $('upNewName').value.trim() ||
@@ -434,7 +462,7 @@
                           $('upVisibility').value ||
                           $('upProduct').value ||
                           $('upTribe').value ||
-                          $('upBan').value;
+                          getBanValue();
         $('updateSubmit').disabled = !(repoName && hasChange);
       }
 
@@ -501,7 +529,7 @@
         const visibility = $('upVisibility').value;
         const product = $('upProduct').value;
         const tribe = $('upTribe').value;
-        const ban = $('upBan').value;
+        const ban = getBanValue();
 
         let body = `### Repository Update Request\n\n`;
         body += `**Repository:** \`${repoName}\`\n\n`;

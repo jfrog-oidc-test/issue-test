@@ -30,10 +30,9 @@ repositories:
   - Descreat-Projects-Maintainer
   - Descreat-Projects-Reader
   cross_team_access: []
-- name: erd-data2
+- name: swcd-data2
   teams:
-  - Descreat-Projects-Admin
-  - Descreat-Projects-Developer
-  - Descreat-Projects-Maintainer
-  - Descreat-Projects-Reader
+  - SW-Digital-Platform-Admin
+  - SW-Digital-Platform-Reader
+  - SW-Digital-Platform-Maintainer
   cross_team_access: []

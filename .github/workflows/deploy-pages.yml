@@ -4,7 +4,7 @@ name: Deploy Jekyll with GitHub Pages dependencies preinstalled
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["f/feat"]
+    branches: ["main"]
     paths:
       - 'index.html'
       - 'manage-repo.html'

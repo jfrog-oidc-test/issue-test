@@ -2,7 +2,7 @@ name: Sync GitHub Teams
 
 on:
   push:
-    branches: [f/feat]
+    branches: [main]
     paths:
       - 'teams-config.yml'
 

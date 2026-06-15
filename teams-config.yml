@@ -28,10 +28,6 @@ teams:
         ad_group_name: GRP-Azure-SWDigitalPlatform-Admin
         ad_object_id: d4e5f6a7-b8c9-0123-defa-234567890123
 
-      - name: SW-Digital-Platform-Reader
-        ad_group_name: GRP-Azure-SWDigitalPlatform-Read
-        ad_object_id: e5f6a7b8-c9d0-1234-efab-345678901234
-
       - name: SW-Digital-Platform-Maintainer
         ad_group_name: GRP-Azure-SWDigitalPlatform-Maintainer
         ad_object_id: e5f6a7b8-c9d0-1234-efab-345678901234

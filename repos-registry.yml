@@ -37,3 +37,8 @@ repositories:
   - SW-Digital-Platform-Maintainer
   cross_team_access:
   - Descreat-Projects-Admin
+- name: api-test11
+  teams:
+  - API-Ecosystem-Admin
+  - API-Ecosystem-Developer
+  cross_team_access: []

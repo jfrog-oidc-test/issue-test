@@ -141,7 +141,91 @@ jobs:
           print('\nTeam sync complete.')
           EOF
 
-      - name: Update repos registry with new teams
+      - name: Remove deleted teams from repos and GitHub
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN }}
+        run: |
+          python3 << 'EOF'
+          import os
+          import yaml
+          import requests
+
+          token = os.environ['GH_TOKEN']
+
+          with open('teams-config.yml') as f:
+              config = yaml.safe_load(f)
+
+          org = config['org']
+          headers = {
+              'Authorization': f'token {token}',
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28'
+          }
+
+          # Build set of all team names currently in config
+          config_teams = set()
+          for product in config.get('teams', []):
+              for team in product.get('teams', []):
+                  config_teams.add(team['name'])
+
+          # Load registry to find teams that were previously assigned
+          registry_file = 'repos-registry.yml'
+          if not os.path.exists(registry_file):
+              print('No registry file, skipping removal check.')
+              exit(0)
+
+          with open(registry_file) as f:
+              registry = yaml.safe_load(f) or {}
+
+          repos = registry.get('repositories', [])
+
+          # Find teams in registry that are no longer in config
+          removed_teams = set()
+          for repo in repos:
+              for team_name in repo.get('teams', []):
+                  if team_name not in config_teams:
+                      removed_teams.add(team_name)
+
+          if not removed_teams:
+              print('No teams removed from config.')
+              exit(0)
+
+          print(f'Teams removed from config: {", ".join(removed_teams)}')
+
+          # Remove access from repos and delete teams
+          for team_name in removed_teams:
+              slug = team_name.lower().replace(' ', '-')
+              print(f'\n  Removing team: {team_name}')
+
+              # Remove from all repos that have it
+              for repo in repos:
+                  if team_name in repo.get('teams', []):
+                      repo_name = repo['name']
+                      r = requests.delete(
+                          f'https://api.github.com/orgs/{org}/teams/{slug}/repos/{org}/{repo_name}',
+                          headers=headers
+                      )
+                      if r.status_code in (204, 404):
+                          print(f'    ✗ Revoked access from: {repo_name}')
+                      else:
+                          print(f'    ::warning::Could not revoke from {repo_name}: {r.status_code}')
+
+              # Delete the team from GitHub
+              r = requests.delete(
+                  f'https://api.github.com/orgs/{org}/teams/{slug}',
+                  headers=headers
+              )
+              if r.status_code == 204:
+                  print(f'    ✓ Deleted team from GitHub: {team_name}')
+              elif r.status_code == 404:
+                  print(f'    Team already gone: {team_name}')
+              else:
+                  print(f'    ::error::Failed to delete {team_name}: {r.status_code} {r.text}')
+
+          print('\nTeam removal complete.')
+          EOF
+
+      - name: Update repos registry (add new / remove deleted teams)
         run: |
           python3 << 'EOF'
           import os
@@ -163,25 +247,37 @@ jobs:
               print('No repos in registry, skipping.')
               exit(0)
 
-          # Build product → team names map
+          # Build product → team names map and full set of valid teams
           product_teams = {}
+          all_config_teams = set()
           for product in config.get('teams', []):
-              product_teams[product['product']] = [t['name'] for t in product.get('teams', [])]
+              team_names = [t['name'] for t in product.get('teams', [])]
+              product_teams[product['product']] = team_names
+              all_config_teams.update(team_names)
 
           updated = False
           for repo in repos:
               current_teams = repo.get('teams', [])
-              # Find which product this repo belongs to
+
+              # Remove teams no longer in config
+              new_teams = [t for t in current_teams if t in all_config_teams]
+              if len(new_teams) != len(current_teams):
+                  removed = set(current_teams) - set(new_teams)
+                  for t in removed:
+                      print(f'  Removed {t} from {repo["name"]}')
+                  updated = True
+
+              # Find which product this repo belongs to and add new teams
               for prod_name, team_names in product_teams.items():
-                  if any(t in team_names for t in current_teams):
-                      # This repo belongs to this product — ensure all teams are listed
+                  if any(t in team_names for t in new_teams):
                       for team_name in team_names:
-                          if team_name not in current_teams:
-                              current_teams.append(team_name)
+                          if team_name not in new_teams:
+                              new_teams.append(team_name)
                               updated = True
                               print(f'  Added {team_name} to {repo["name"]}')
-                      repo['teams'] = current_teams
                       break
+
+              repo['teams'] = new_teams
 
           if updated:
               registry['repositories'] = repos
@@ -189,7 +285,7 @@ jobs:
                   f.write('# Repository Registry — Source of Truth\n')
                   f.write('# Auto-updated by GitHub Actions on repo creation, update, and cross-team access grants.\n\n')
                   yaml.dump(registry, f, default_flow_style=False, sort_keys=False)
-              print('✓ Registry updated with new teams.')
+              print('✓ Registry updated.')
           else:
               print('Registry already up to date.')
           EOF

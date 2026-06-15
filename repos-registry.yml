@@ -35,4 +35,5 @@ repositories:
   - SW-Digital-Platform-Admin
   - SW-Digital-Platform-Reader
   - SW-Digital-Platform-Maintainer
-  cross_team_access: []
+  cross_team_access:
+  - Descreat-Projects-Admin

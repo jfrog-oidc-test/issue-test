@@ -2,7 +2,7 @@
 # Auto-updated by GitHub Actions on repo creation, update, and cross-team access grants.
 
 repositories:
-- name: gg-my11
+- name: erd-my11
   teams:
   - Descreat-Projects-Admin
   - Descreat-Projects-Developer

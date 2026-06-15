@@ -42,10 +42,6 @@ teams:
         ad_group_name: GRP-Azure-APIEcosystem-Admin
         ad_object_id: f6a7b8c9-d0e1-2345-fabc-456789012345
 
-      - name: API-Ecosystem-Developer
-        ad_group_name: GRP-Azure-APIEcosystem-Dev
-        ad_object_id: a7b8c9d0-e1f2-3456-abcd-567890123456
-
   - product: Embeded-pipeline
     teams:
       - name: Embeded-pipeline-Developer

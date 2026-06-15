@@ -310,6 +310,16 @@ jobs:
 
               repo['teams'] = new_teams
 
+              # Remove deleted teams from cross_team_access
+              current_cross = repo.get('cross_team_access', [])
+              new_cross = [t for t in current_cross if t in all_config_teams]
+              if len(new_cross) != len(current_cross):
+                  removed_cross = set(current_cross) - set(new_cross)
+                  for t in removed_cross:
+                      print(f'  Removed {t} from cross_team_access of {repo["name"]}')
+                  updated = True
+              repo['cross_team_access'] = new_cross
+
           if updated:
               registry['repositories'] = repos
               with open(registry_file, 'w') as f:

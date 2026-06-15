@@ -238,7 +238,9 @@ jobs:
               def get_permission(name):
                   if name.endswith('-Admin'):
                       return 'admin'
-                  elif name.endswith('-Developer'):
+                  elif name.endswith('-Maintainer'):
+                      return 'maintain'
+                  elif name.endswith('-Developer') or name.endswith('-Collaborator'):
                       return 'push'
                   elif name.endswith('-Reader'):
                       return 'pull'
@@ -290,7 +292,9 @@ jobs:
               def get_permission(name):
                   if name.endswith('-Admin'):
                       return 'admin'
-                  elif name.endswith('-Developer'):
+                  elif name.endswith('-Maintainer'):
+                      return 'maintain'
+                  elif name.endswith('-Developer') or name.endswith('-Collaborator'):
                       return 'push'
                   elif name.endswith('-Reader'):
                       return 'pull'

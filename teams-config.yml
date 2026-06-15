@@ -21,6 +21,11 @@ teams:
         ad_group_name: GRP-Azure-DescreatProjects-Read
         ad_object_id: c3d4e5f6-a7b8-9012-cdef-123456789012
 
+      - name: Descreat-Projects-Maintainer
+        description: Maintainer access for Descreat Projects repositories
+        ad_group_name: GRP-Azure-DescreatProjects-Maintainer
+        ad_object_id: c3d4e5f6-a7b8-9012-cdef-123456789012
+
   - product: SW-Digital-Platform
     teams:
       - name: SW-Digital-Platform-Admin
@@ -31,6 +36,21 @@ teams:
       - name: SW-Digital-Platform-Reader
         description: Read-only access for SW Digital Platform repositories
         ad_group_name: GRP-Azure-SWDigitalPlatform-Read
+        ad_object_id: e5f6a7b8-c9d0-1234-efab-345678901234
+
+      - name: SW-Digital-Platform-Developer
+        description: Developer write access for SW Digital Platform repositories
+        ad_group_name: GRP-Azure-SWDigitalPlatform-Dev
+        ad_object_id: e5f6a7b8-c9d0-1234-efab-345678901234
+
+      - name: SW-Digital-Platform-Collaborator
+        description: Collaborator access for SW Digital Platform repositories
+        ad_group_name: GRP-Azure-SWDigitalPlatform-Collab
+        ad_object_id: e5f6a7b8-c9d0-1234-efab-345678901234
+
+      - name: SW-Digital-Platform-Maintainer
+        description: Maintainer access for SW Digital Platform repositories
+        ad_group_name: GRP-Azure-SWDigitalPlatform-Maintainer
         ad_object_id: e5f6a7b8-c9d0-1234-efab-345678901234
 
   - product: API-Ecosystem

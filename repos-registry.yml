@@ -39,8 +39,8 @@ repositories:
   - API-Ecosystem-Admin
   cross_team_access:
   - Embeded-pipeline-Developer
-- name: erd-portal11
+- name: swcd-portal11
   teams:
-  - Descreat-Projects-Admin
-  - Descreat-Projects-Maintainer
+  - SW-Digital-Platform-Admin
+  - SW-Digital-Platform-Maintainer
   cross_team_access: []

@@ -44,3 +44,8 @@ repositories:
   - SW-Digital-Platform-Admin
   - SW-Digital-Platform-Maintainer
   cross_team_access: []
+- name: erd-vjs-d-dmgp-r4f-dc-fddf
+  teams:
+  - Descreat-Projects-Admin
+  - Descreat-Projects-Maintainer
+  cross_team_access: []

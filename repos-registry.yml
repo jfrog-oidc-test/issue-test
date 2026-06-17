@@ -2,10 +2,10 @@
 # Auto-updated by GitHub Actions on repo creation, update, and cross-team access grants.
 
 repositories:
-- name: erd-my11
+- name: swcd-test345
   teams:
-  - Descreat-Projects-Admin
-  - Descreat-Projects-Maintainer
+  - SW-Digital-Platform-Admin
+  - SW-Digital-Platform-Maintainer
   cross_team_access:
   - SW-Digital-Platform-Admin
 - name: swcd-test11234

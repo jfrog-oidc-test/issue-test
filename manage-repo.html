@@ -64,6 +64,7 @@
       box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
     }
     .field textarea { resize: vertical; min-height: 70px; }
+    .warn { font-size: 12px; color: #9a6700; margin-top: 4px; min-height: 14px; }
 
     .row {
       display: grid;
@@ -248,10 +249,9 @@
 
         <div class="field">
           <label for="upBan">Change BAN ID</label>
-          <select id="upBan">
-            <option value="">— no change —</option>
-          </select>
-          <input id="upBanManual" type="text" placeholder="Enter BAN ID manually" style="display:none; margin-top:6px;" />
+          <div class="hint">Must start with APM followed by 7 digits (e.g. APM1234567)</div>
+          <input id="upBan" type="text" placeholder="APM1234567" />
+          <div class="warn" id="upBanWarn"></div>
         </div>
 
         <button type="submit" class="submit" id="updateSubmit" disabled>
@@ -430,12 +430,8 @@
         const tribeSelect = $('upTribe');
         tribeSelect.innerHTML = '<option value="">— no change —</option>';
 
-        // Reset BAN dropdown
-        const banSelect = $('upBan');
-        banSelect.innerHTML = '<option value="">— no change —</option>';
-
         if (!product || !mapping) {
-          // No product selected → show all tribes/prefixes, no BAN
+          // No product selected → show all tribes/prefixes
           (CFG.TRIBES || []).forEach(t => {
             const opt = document.createElement('option');
             opt.value = t;
@@ -477,29 +473,10 @@
           tribeSelect.appendChild(opt);
         });
 
-        // Populate BAN IDs for this product
-        (mapping.bans || []).forEach(b => {
-          const opt = document.createElement('option');
-          opt.value = b;
-          opt.textContent = b;
-          banSelect.appendChild(opt);
-        });
-
-        // Add "Other (enter manually)" option
-        const otherOpt = document.createElement('option');
-        otherOpt.value = '__other__';
-        otherOpt.textContent = CFG.BAN_OTHER_LABEL || 'Other (enter manually)';
-        banSelect.appendChild(otherOpt);
-
-        toggleBanManual();
         renderPreview();
       }
 
-      function toggleBanManual() {
-        const isOther = $('upBan').value === '__other__';
-        $('upBanManual').style.display = isOther ? 'block' : 'none';
-        if (!isOther) $('upBanManual').value = '';
-      }
+      const BAN_REGEX = /^APM\d{7}$/;
 
       // === Live preview for rename ===
       function renderPreview() {
@@ -533,14 +510,18 @@
         validateUpdate();
       });
 
-      $('upBan').addEventListener('change', function () {
-        toggleBanManual();
+      $('upBan').addEventListener('input', function () {
+        const val = this.value.trim().toUpperCase();
+        const warn = $('upBanWarn');
+        if (val && !BAN_REGEX.test(val)) {
+          warn.textContent = 'BAN ID must start with APM followed by 7 digits (e.g. APM1234567)';
+        } else {
+          warn.textContent = '';
+        }
         validateUpdate();
       });
 
-      $('upBanManual').addEventListener('input', validateUpdate);
-
-      // Initial population (all tribes/prefixes, no BAN)
+      // Initial population (all tribes/prefixes)
       applyProductCascade();
 
       $('upProduct').addEventListener('change', function () {
@@ -550,21 +531,21 @@
 
       // === Update form validation ===
       function getBanValue() {
-        const sel = $('upBan').value;
-        if (sel === '__other__') return $('upBanManual').value.trim();
-        return sel;
+        return $('upBan').value.trim().toUpperCase();
       }
 
       function validateUpdate() {
         const repoName = $('upRepoName').value.trim();
+        const banVal = getBanValue();
+        const banValid = !banVal || BAN_REGEX.test(banVal);
         const hasChange = $('upPrefix').value ||
                           $('upNewName').value.trim() ||
                           $('upDescription').value.trim() ||
                           $('upVisibility').value ||
                           $('upProduct').value ||
                           $('upTribe').value ||
-                          getBanValue();
-        $('updateSubmit').disabled = !(repoName && hasChange);
+                          banVal;
+        $('updateSubmit').disabled = !(repoName && hasChange && banValid);
       }
 
       ['upRepoName','upDescription','upVisibility','upProduct','upTribe','upBan'].forEach(id => {
@@ -718,6 +699,7 @@
         $('updateForm').reset();
         $('crossTeamForm').reset();
         $('ctTeams').innerHTML = '<p style="color:#6e7781; font-size:13px; font-style:italic;">Select a product above to see available teams</p>';
+        $('upBanWarn').textContent = '';
         $('result').classList.remove('show');
         validateUpdate();
         validateCrossTeam();

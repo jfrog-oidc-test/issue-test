@@ -242,12 +242,8 @@
       <div class="row">
         <div class="field">
           <label for="ban">BAN ID <span class="required">*</span></label>
-          <div class="hint">Filtered by selected product</div>
-          <select id="ban" required>
-            <option value="">— select BAN ID —</option>
-          </select>
-          <input id="banOther" type="text" placeholder="Enter BAN ID (e.g. BAN-12345)"
-                 style="display:none; margin-top:8px;" />
+          <div class="hint">Must start with APM followed by 7 digits (e.g. APM1234567)</div>
+          <input id="ban" type="text" placeholder="APM1234567" required />
           <div class="warn" id="banWarn"></div>
         </div>
 
@@ -320,8 +316,7 @@
       const ISSUE_LABELS = CFG.ISSUE_LABELS || [];
       const PRODUCT_MAP = CFG.PRODUCT_MAP || {};
       const DESC_MAX = CFG.DESCRIPTION_MAX || 800;
-      const BAN_OTHER = '__other__';
-      const BAN_OTHER_LABEL = CFG.BAN_OTHER_LABEL || 'Other (enter manually)';
+      const BAN_REGEX = /^APM\d{7}$/;
 
       const $ = (id) => document.getElementById(id);
       const REQUIRED = ['prefix','repoName','product','tribe','ban','visibility','description'];
@@ -374,10 +369,13 @@
         }
         $('meta').innerHTML = chips.join('');
 
-        // BAN warning when "Other" chosen but empty
+        // BAN warning for invalid format
         const banWarn = $('banWarn');
-        if ($('ban').value === BAN_OTHER && !$('banOther').value.trim()) {
-          banWarn.textContent = 'Please enter a BAN ID';
+        const banVal = getBanValue();
+        if (banVal && !BAN_REGEX.test(banVal)) {
+          banWarn.textContent = 'BAN ID must start with APM followed by 7 digits (e.g. APM1234567)';
+        } else if (!banVal) {
+          banWarn.textContent = '';
         } else {
           banWarn.textContent = '';
         }
@@ -390,10 +388,10 @@
         if (descLen >= DESC_MAX) counter.classList.add('danger');
         else if (descLen >= DESC_MAX * 0.875) counter.classList.add('warning');
 
-        // Validation: all required fields filled, and BAN resolved properly
+        // Validation: all required fields filled, and BAN matches format
         const baseValid = REQUIRED.filter(f => f !== 'ban')
           .every((f) => $(f).value.trim() !== '');
-        const banValid = banVal !== '';
+        const banValid = BAN_REGEX.test(banVal);
         $('submit').disabled = !(baseValid && banValid);
       }
 
@@ -416,9 +414,7 @@ ${data.description}`;
       }
 
       function getBanValue() {
-        const sel = $('ban').value;
-        if (sel === BAN_OTHER) return $('banOther').value.trim();
-        return sel;
+        return $('ban').value.trim().toUpperCase();
       }
 
       function collectData() {
@@ -485,12 +481,10 @@ ${data.description}`;
       function resetForm() {
         $('repoForm').reset();
         // Sync searchable dropdowns back to placeholder
-        ['prefix', 'product', 'tribe', 'visibility', 'ban'].forEach((id) => {
+        ['prefix', 'product', 'tribe', 'visibility'].forEach((id) => {
           $(id).dispatchEvent(new Event('ss:sync'));
         });
-        $('banOther').value = '';
-        $('banOther').style.display = 'none';
-        applyProductCascade(); // reset tribe/prefix/ban filtering
+        applyProductCascade(); // reset tribe/prefix filtering
         $('result').classList.remove('show');
         renderPreview();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -653,35 +647,17 @@ ${data.description}`;
         };
       }
 
-      function setBanOptions(bans) {
-        // Build BAN option list = product bans + "Other"
-        const items = (bans || []).map(b => ({ value: b, label: b }));
-        items.push({ value: BAN_OTHER, label: BAN_OTHER_LABEL });
-        $('ban').setOptions(items);
-        // Hide manual input until "Other" chosen
-        toggleBanOther();
-      }
-
-      function toggleBanOther() {
-        const isOther = $('ban').value === BAN_OTHER;
-        const other = $('banOther');
-        other.style.display = isOther ? 'block' : 'none';
-        if (!isOther) other.value = '';
-      }
-
       function applyProductCascade() {
         const product = $('product').value;
         const mapping = PRODUCT_MAP[product];
         if (!product || !mapping) {
-          // No product selected → allow everything; BAN only offers "Other"
+          // No product selected → allow everything
           $('tribe').setAllowed(null);
           $('prefix').setAllowed(null);
-          setBanOptions([]);
           return;
         }
         $('tribe').setAllowed(mapping.tribes === 'all' ? null : mapping.tribes);
         $('prefix').setAllowed(mapping.prefixes === 'all' ? null : mapping.prefixes);
-        setBanOptions(mapping.bans || []);
       }
 
       function populateDropdowns() {
@@ -717,17 +693,16 @@ ${data.description}`;
         populateDropdowns();
 
         // Turn every dropdown into a searchable one
-        ['prefix', 'product', 'tribe', 'visibility', 'ban'].forEach((id) => {
+        ['prefix', 'product', 'tribe', 'visibility'].forEach((id) => {
           enhanceSelect($(id));
         });
 
-        // Cascade: product restricts tribe + prefix + ban
+        // Cascade: product restricts tribe + prefix
         $('product').addEventListener('change', applyProductCascade);
         applyProductCascade(); // set initial state
 
-        // BAN "Other" toggle
-        $('ban').addEventListener('change', () => { toggleBanOther(); renderPreview(); });
-        $('banOther').addEventListener('input', renderPreview);
+        // BAN input handler
+        $('ban').addEventListener('input', renderPreview);
 
         REQUIRED.forEach((f) => {
           $(f).addEventListener('input', renderPreview);

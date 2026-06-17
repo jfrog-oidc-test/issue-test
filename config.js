@@ -58,29 +58,21 @@ window.APP_CONFIG = {
   // --- Description max length ---
   DESCRIPTION_MAX: 800,
 
-  // --- Label shown for the "enter manually" BAN option ---
-  BAN_OTHER_LABEL: 'Other (enter manually)',
-
-  // --- Product → allowed tribes, prefixes & BAN IDs ---
+  // --- Product → allowed tribes & prefixes ---
   // Use EXACT tribe names from TRIBES above, and prefix `value`s from PREFIXES.
-  // `bans` is the list of BAN IDs valid for that product. Users can also pick
-  // "Other (enter manually)" to type a BAN ID not in the list.
   // Set tribes or prefixes to 'all' to allow everything for that product.
   PRODUCT_MAP: {
     'Descreat-Projects': {
       tribes: ['CEP', 'CCKCE'],
-      prefixes: ['gg', 'erd', 'lmdx'],
-      bans: ['BAN-1001', 'BAN-1002', 'BAN-1003']
+      prefixes: ['gg', 'erd', 'lmdx']
     },
     'SW-Digital-Platform': {
       tribes: ['DevOps'],
-      prefixes: ['swcd'],
-      bans: ['BAN-2002']
+      prefixes: ['swcd']
     },
     'API-Ecosystem': {
       tribes: ['BOI'],
-      prefixes: ['api'],
-      bans: ['BAN-3001']
+      prefixes: ['api']
     },
     'Embeded-pipeline': {
       tribes: ['DevOps'],
@@ -88,13 +80,11 @@ window.APP_CONFIG = {
     },
     '247-planner': {
       tribes: ['PRM'],
-      prefixes: ['planner'],
-      bans: ['BAN-5001']
+      prefixes: ['planner']
     },
     '247-clinica-survey': {
       tribes: ['PRM'],
-      prefixes: ['clinica'],
-      bans: ['BAN-6001']
+      prefixes: ['clinica']
     }
   }
 };

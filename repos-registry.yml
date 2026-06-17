@@ -49,3 +49,8 @@ repositories:
   - Descreat-Projects-Admin
   - Descreat-Projects-Maintainer
   cross_team_access: []
+- name: gg-test1123
+  teams:
+  - Descreat-Projects-Admin
+  - Descreat-Projects-Maintainer
+  cross_team_access: []

@@ -146,7 +146,17 @@
     .admin-badge.not-found {
       background: #fff8c5; border: 1px solid #d4a72c; color: #6f5e12;
     }
+    .admin-badge.denied {
+      background: #ffebe9; border: 1px solid #cf222e; color: #82071e;
+    }
     .admin-badge strong { font-weight: 600; }
+
+    /* Username section */
+    .username-section {
+      background: #f6f8fa; border: 1px solid #d0d7de;
+      border-radius: 8px; padding: 14px 16px; margin-bottom: 1.5rem;
+    }
+    .username-section .field { margin-bottom: 0; }
 
     /* Preview card */
     .preview-card {
@@ -187,6 +197,15 @@
       <h1>⚙️ Manage Repository</h1>
       <p class="subtitle">Update repo metadata, rename, or grant cross-team access.</p>
     </header>
+
+    <!-- GitHub Username -->
+    <div class="username-section">
+      <div class="field">
+        <label for="ghUsername">Your GitHub username <span class="required">*</span></label>
+        <div class="hint">Enter the same username you use to log in to GitHub. This verifies you are in the repo's admin team.</div>
+        <input id="ghUsername" type="text" placeholder="your-github-username" autocomplete="off" />
+      </div>
+    </div>
 
     <!-- Tabs -->
     <div class="tabs">
@@ -377,6 +396,8 @@
       let PRODUCT_TEAMS = {};
       // Repos loaded from repos-registry.yml
       let REPO_REGISTRY = [];
+      // Team members loaded from team-members.json (team name → array of usernames)
+      let TEAM_MEMBERS = {};
 
       // Fetch and parse teams-config.yml from the same repo
       async function loadTeamsConfig() {
@@ -410,6 +431,18 @@
         }
       }
 
+      // Fetch team-members.json
+      async function loadTeamMembers() {
+        try {
+          const resp = await fetch('team-members.json');
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          TEAM_MEMBERS = await resp.json();
+          console.log('Team members loaded:', Object.keys(TEAM_MEMBERS).length, 'teams');
+        } catch (err) {
+          console.warn('Could not load team-members.json:', err);
+        }
+      }
+
       // Look up a repo and return its admin team name (or null)
       function getAdminTeam(repoName) {
         const repo = REPO_REGISTRY.find(r => r.name === repoName);
@@ -418,28 +451,64 @@
         return adminTeam || null;
       }
 
+      // Check if username is in a team (case-insensitive)
+      function isTeamMember(teamName, username) {
+        if (!teamName || !username) return false;
+        const members = TEAM_MEMBERS[teamName] || [];
+        return members.some(m => m.toLowerCase() === username.toLowerCase());
+      }
+
       // Show admin badge for a repo name input
       function showAdminBadge(repoName, badgeId) {
         const badge = $(badgeId);
+        const username = $('ghUsername').value.trim();
         if (!repoName) {
-          badge.classList.remove('show', 'found', 'not-found');
+          badge.className = 'admin-badge';
           return;
         }
         const adminTeam = getAdminTeam(repoName);
-        badge.classList.add('show');
-        if (adminTeam) {
-          badge.className = 'admin-badge show found';
-          badge.innerHTML = '🔒 Owner: <strong>' + adminTeam + '</strong> — only members of this team can update this repo.';
-        } else {
+        if (!adminTeam) {
           badge.className = 'admin-badge show not-found';
           badge.innerHTML = '⚠️ Repository <strong>' + repoName + '</strong> not found in the registry.';
+          return;
+        }
+        if (!username) {
+          badge.className = 'admin-badge show not-found';
+          badge.innerHTML = '🔒 Owner: <strong>' + adminTeam + '</strong> — enter your GitHub username above to verify access.';
+          return;
+        }
+        if (isTeamMember(adminTeam, username)) {
+          badge.className = 'admin-badge show found';
+          badge.innerHTML = '✅ <strong>' + username + '</strong> is a member of <strong>' + adminTeam + '</strong>. You can update this repo.';
+        } else {
+          badge.className = 'admin-badge show denied';
+          badge.innerHTML = '🚫 <strong>' + username + '</strong> is NOT a member of <strong>' + adminTeam + '</strong>. Only admin team members can update this repo.';
         }
       }
 
-      // Initialize after loading both configs
-      Promise.all([loadTeamsConfig(), loadReposRegistry()]).then(init);
+      // Initialize after loading all configs
+      Promise.all([loadTeamsConfig(), loadReposRegistry(), loadTeamMembers()]).then(init);
 
       function init() {
+
+      // === Username handler (saved to localStorage) ===
+      $('ghUsername').addEventListener('input', function () {
+        const username = this.value.trim();
+        try { localStorage.setItem('gh_username', username); } catch(e) {}
+        // Refresh badges & validation
+        const upRepo = $('upRepoName').value.trim();
+        const ctRepo = $('ctRepoName').value.trim();
+        if (upRepo) showAdminBadge(upRepo, 'upAdminBadge');
+        if (ctRepo) showAdminBadge(ctRepo, 'ctAdminBadge');
+        validateUpdate();
+        validateCrossTeam();
+      });
+
+      // Auto-load saved username
+      try {
+        const saved = localStorage.getItem('gh_username');
+        if (saved) $('ghUsername').value = saved;
+      } catch(e) {}
 
       // === Tab switching ===
       document.querySelectorAll('.tab').forEach(tab => {
@@ -593,6 +662,7 @@
 
       function validateUpdate() {
         const repoName = $('upRepoName').value.trim();
+        const username = $('ghUsername').value.trim();
         const banVal = getBanValue();
         const banValid = !banVal || BAN_REGEX.test(banVal);
         const hasChange = $('upPrefix').value ||
@@ -602,9 +672,10 @@
                           $('upProduct').value ||
                           $('upTribe').value ||
                           banVal;
-        // Repo must exist in registry (has an admin team)
+        // Repo must exist AND user must be a member of admin team
         const adminTeam = getAdminTeam(repoName);
-        $('updateSubmit').disabled = !(repoName && hasChange && banValid && adminTeam);
+        const isMember = isTeamMember(adminTeam, username);
+        $('updateSubmit').disabled = !(repoName && hasChange && banValid && adminTeam && isMember);
       }
 
       ['upRepoName','upDescription','upVisibility','upProduct','upTribe','upBan'].forEach(id => {
@@ -615,6 +686,7 @@
       // Show admin badge when repo name changes
       $('upRepoName').addEventListener('input', function () {
         showAdminBadge(this.value.trim(), 'upAdminBadge');
+        validateUpdate();
       });
 
       // === Cross-team form: show teams on product change ===
@@ -653,13 +725,15 @@
 
       function validateCrossTeam() {
         const repo = $('ctRepoName').value.trim();
+        const username = $('ghUsername').value.trim();
         const product = $('ctProduct').value;
         const permission = $('ctPermission').value;
         const reason = $('ctReason').value.trim();
         const teams = document.querySelectorAll('input[name="ctTeamSelect"]:checked');
-        // Repo must exist in registry (has an admin team)
+        // Repo must exist AND user must be a member of admin team
         const adminTeam = getAdminTeam(repo);
-        $('crossTeamSubmit').disabled = !(repo && product && permission && reason && teams.length > 0 && adminTeam);
+        const isMember = isTeamMember(adminTeam, username);
+        $('crossTeamSubmit').disabled = !(repo && product && permission && reason && teams.length > 0 && adminTeam && isMember);
       }
 
       ['ctRepoName', 'ctProduct', 'ctPermission', 'ctReason'].forEach(id => {
@@ -670,6 +744,7 @@
       // Show admin badge when repo name changes
       $('ctRepoName').addEventListener('input', function () {
         showAdminBadge(this.value.trim(), 'ctAdminBadge');
+        validateCrossTeam();
       });
 
       // === Submit: Update Metadata ===
@@ -779,8 +854,8 @@
         $('crossTeamForm').reset();
         $('ctTeams').innerHTML = '<p style="color:#6e7781; font-size:13px; font-style:italic;">Select a product above to see available teams</p>';
         $('upBanWarn').textContent = '';
-        $('upAdminBadge').classList.remove('show', 'found', 'not-found');
-        $('ctAdminBadge').classList.remove('show', 'found', 'not-found');
+        $('upAdminBadge').className = 'admin-badge';
+        $('ctAdminBadge').className = 'admin-badge';
         $('result').classList.remove('show');
         validateUpdate();
         validateCrossTeam();

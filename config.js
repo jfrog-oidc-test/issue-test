@@ -1,5 +1,5 @@
 // ============================================================
-// CONFIG — Edit everything here. No need to touch index.html.
+// CONFIG — Edit everything here. No need to touch index.html..
 // ============================================================
 //
 // This file controls:

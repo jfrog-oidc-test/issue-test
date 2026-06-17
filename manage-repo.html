@@ -135,6 +135,19 @@
       font-size: 13px; color: #0969da; margin-bottom: 1rem;
     }
 
+    .admin-badge {
+      display: none; margin-top: 8px; padding: 10px 14px;
+      border-radius: 6px; font-size: 13px;
+    }
+    .admin-badge.show { display: block; }
+    .admin-badge.found {
+      background: #dafbe1; border: 1px solid #1a7f37; color: #116329;
+    }
+    .admin-badge.not-found {
+      background: #fff8c5; border: 1px solid #d4a72c; color: #6f5e12;
+    }
+    .admin-badge strong { font-weight: 600; }
+
     /* Preview card */
     .preview-card {
       background: linear-gradient(135deg, #f0f6ff 0%, #f0fbf7 100%);
@@ -192,6 +205,7 @@
           <label for="upRepoName">Current repository name <span class="required">*</span></label>
           <div class="hint">The full name of the existing repo (e.g. api-customer-portal)</div>
           <input id="upRepoName" type="text" placeholder="prefix-repo-name" required />
+          <div class="admin-badge" id="upAdminBadge"></div>
         </div>
 
         <div class="field">
@@ -271,6 +285,7 @@
           <label for="ctRepoName">Repository name <span class="required">*</span></label>
           <div class="hint">The full name of the existing repo (e.g. api-customer-portal)</div>
           <input id="ctRepoName" type="text" placeholder="prefix-repo-name" required />
+          <div class="admin-badge" id="ctAdminBadge"></div>
         </div>
 
         <div class="field">
@@ -360,6 +375,8 @@
 
       // Teams loaded from teams-config.yml (product → team names)
       let PRODUCT_TEAMS = {};
+      // Repos loaded from repos-registry.yml
+      let REPO_REGISTRY = [];
 
       // Fetch and parse teams-config.yml from the same repo
       async function loadTeamsConfig() {
@@ -379,8 +396,48 @@
         }
       }
 
-      // Initialize after loading teams
-      loadTeamsConfig().then(init);
+      // Fetch and parse repos-registry.yml
+      async function loadReposRegistry() {
+        try {
+          const resp = await fetch('repos-registry.yml');
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const text = await resp.text();
+          const config = jsyaml.load(text);
+          REPO_REGISTRY = config.repositories || [];
+          console.log('Repos registry loaded:', REPO_REGISTRY.length, 'repos');
+        } catch (err) {
+          console.warn('Could not load repos-registry.yml:', err);
+        }
+      }
+
+      // Look up a repo and return its admin team name (or null)
+      function getAdminTeam(repoName) {
+        const repo = REPO_REGISTRY.find(r => r.name === repoName);
+        if (!repo) return null;
+        const adminTeam = (repo.teams || []).find(t => t.endsWith('-Admin'));
+        return adminTeam || null;
+      }
+
+      // Show admin badge for a repo name input
+      function showAdminBadge(repoName, badgeId) {
+        const badge = $(badgeId);
+        if (!repoName) {
+          badge.classList.remove('show', 'found', 'not-found');
+          return;
+        }
+        const adminTeam = getAdminTeam(repoName);
+        badge.classList.add('show');
+        if (adminTeam) {
+          badge.className = 'admin-badge show found';
+          badge.innerHTML = '🔒 Owner: <strong>' + adminTeam + '</strong> — only members of this team can update this repo.';
+        } else {
+          badge.className = 'admin-badge show not-found';
+          badge.innerHTML = '⚠️ Repository <strong>' + repoName + '</strong> not found in the registry.';
+        }
+      }
+
+      // Initialize after loading both configs
+      Promise.all([loadTeamsConfig(), loadReposRegistry()]).then(init);
 
       function init() {
 
@@ -545,12 +602,19 @@
                           $('upProduct').value ||
                           $('upTribe').value ||
                           banVal;
-        $('updateSubmit').disabled = !(repoName && hasChange && banValid);
+        // Repo must exist in registry (has an admin team)
+        const adminTeam = getAdminTeam(repoName);
+        $('updateSubmit').disabled = !(repoName && hasChange && banValid && adminTeam);
       }
 
       ['upRepoName','upDescription','upVisibility','upProduct','upTribe','upBan'].forEach(id => {
         $(id).addEventListener('input', validateUpdate);
         $(id).addEventListener('change', validateUpdate);
+      });
+
+      // Show admin badge when repo name changes
+      $('upRepoName').addEventListener('input', function () {
+        showAdminBadge(this.value.trim(), 'upAdminBadge');
       });
 
       // === Cross-team form: show teams on product change ===
@@ -593,12 +657,19 @@
         const permission = $('ctPermission').value;
         const reason = $('ctReason').value.trim();
         const teams = document.querySelectorAll('input[name="ctTeamSelect"]:checked');
-        $('crossTeamSubmit').disabled = !(repo && product && permission && reason && teams.length > 0);
+        // Repo must exist in registry (has an admin team)
+        const adminTeam = getAdminTeam(repo);
+        $('crossTeamSubmit').disabled = !(repo && product && permission && reason && teams.length > 0 && adminTeam);
       }
 
       ['ctRepoName', 'ctProduct', 'ctPermission', 'ctReason'].forEach(id => {
         $(id).addEventListener('input', validateCrossTeam);
         $(id).addEventListener('change', validateCrossTeam);
+      });
+
+      // Show admin badge when repo name changes
+      $('ctRepoName').addEventListener('input', function () {
+        showAdminBadge(this.value.trim(), 'ctAdminBadge');
       });
 
       // === Submit: Update Metadata ===
@@ -627,8 +698,12 @@
           fullNewName = rawNewName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
         }
 
+        const adminTeam = getAdminTeam(repoName);
+
         let body = `### Repository Update Request\n\n`;
-        body += `**Repository:** \`${repoName}\`\n\n`;
+        body += `**Repository:** \`${repoName}\`\n`;
+        body += `**Admin Team (owner):** ${adminTeam}\n\n`;
+        body += `> ⚠️ Only members of **${adminTeam}** are authorized to update this repository.\n\n`;
         body += `| Field | New Value |\n|---|---|\n`;
 
         if (fullNewName) body += `| New Name | \`${fullNewName}\` |\n`;
@@ -656,8 +731,12 @@
         const teams = Array.from(document.querySelectorAll('input[name="ctTeamSelect"]:checked'))
           .map(cb => cb.value);
 
+        const adminTeam = getAdminTeam(repoName);
+
         let body = `### Cross-Team Access Request\n\n`;
-        body += `**Repository:** \`${repoName}\`\n\n`;
+        body += `**Repository:** \`${repoName}\`\n`;
+        body += `**Admin Team (owner):** ${adminTeam}\n\n`;
+        body += `> ⚠️ Only members of **${adminTeam}** are authorized to grant access to this repository.\n\n`;
         body += `| Field | Value |\n|---|---|\n`;
         body += `| Source Product | ${product} |\n`;
         body += `| Permission | ${permission} |\n`;
@@ -700,6 +779,8 @@
         $('crossTeamForm').reset();
         $('ctTeams').innerHTML = '<p style="color:#6e7781; font-size:13px; font-style:italic;">Select a product above to see available teams</p>';
         $('upBanWarn').textContent = '';
+        $('upAdminBadge').classList.remove('show', 'found', 'not-found');
+        $('ctAdminBadge').classList.remove('show', 'found', 'not-found');
         $('result').classList.remove('show');
         validateUpdate();
         validateCrossTeam();

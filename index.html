@@ -371,7 +371,6 @@
 
         // BAN warning for invalid format
         const banWarn = $('banWarn');
-        const banVal = getBanValue();
         if (banVal && !BAN_REGEX.test(banVal)) {
           banWarn.textContent = 'BAN ID must start with APM followed by 7 digits (e.g. APM1234567)';
         } else if (!banVal) {

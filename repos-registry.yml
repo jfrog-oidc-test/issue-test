@@ -23,10 +23,9 @@ repositories:
   - Descreat-Projects-Admin
   - Descreat-Projects-Maintainer
   cross_team_access: []
-- name: swcd-data2
+- name: esd-test1122
   teams:
-  - SW-Digital-Platform-Admin
-  - SW-Digital-Platform-Maintainer
+  - Embeded-pipeline-Developer
   cross_team_access:
   - Descreat-Projects-Admin
   - API-Ecosystem-Admin

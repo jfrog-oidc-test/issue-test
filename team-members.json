@@ -1,11 +1,27 @@
 {
   "Descreat-Projects-Admin": [],
-  "Descreat-Projects-Maintainer": [],
-  "SW-Digital-Platform-Admin": [],
-  "SW-Digital-Platform-Maintainer": [],
-  "API-Ecosystem-Admin": [],
-  "Embeded-pipeline-Developer": [],
-  "247-planner-Admin": [],
-  "247-planner-Developer": [],
-  "247-planner-Reader": []
+  "Descreat-Projects-Maintainer": [
+    "pravinpatil-kone"
+  ],
+  "SW-Digital-Platform-Admin": [
+    "pravinpatil-kone"
+  ],
+  "SW-Digital-Platform-Maintainer": [
+    "pravinpatil-kone"
+  ],
+  "API-Ecosystem-Admin": [
+    "pravinpatil-kone"
+  ],
+  "Embeded-pipeline-Developer": [
+    "pravinpatil-kone"
+  ],
+  "247-planner-Admin": [
+    "pravinpatil-kone"
+  ],
+  "247-planner-Developer": [
+    "pravinpatil-kone"
+  ],
+  "247-planner-Reader": [
+    "pravinpatil-kone"
+  ]
 }
